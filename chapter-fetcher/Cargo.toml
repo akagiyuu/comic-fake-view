@@ -1,0 +1,11 @@
+[package]
+name = "chapter-fetcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+color-eyre.workspace = true
+futures.workspace = true
+regex.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
