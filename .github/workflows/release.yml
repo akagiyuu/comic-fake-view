@@ -1,0 +1,103 @@
+name: release
+on:
+  push:
+    tags:
+    - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ env.VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get release
+        shell: bash
+        if: env.VERSION == ''
+        run: |
+          echo "VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          echo "version is: ${{ env.VERSION }}"
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ${{ env.VERSION }}
+
+  build-release:
+    needs: ['create-release']
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO: cargo
+      # When CARGO is set to CROSS, this is set to `--target matrix.target`.
+      TARGET_FLAGS: ""
+      # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
+      TARGET_DIR: ./target
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+
+    strategy:
+      matrix:
+        include:
+          - build: linux
+            os: ubuntu-latest
+            rust: nightly
+            target: x86_64-unknown-linux-gnu
+          - build: win-msvc
+            os: windows-latest
+            rust: nightly
+            target: x86_64-pc-windows-msvc
+          - build: win-gnu
+            os: windows-latest
+            rust: nightly-x86_64-gnu
+            target: x86_64-pc-windows-gnu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install packages (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if ! command -V sudo; then
+            apt-get update
+            apt-get install -y --no-install-recommends sudo
+          fi
+
+      - name: Install rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          targets: ${{ matrix.target }}
+          toolchain: ${{ matrix.rust }}
+
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          target: ${{ matrix.target }}
+          toolchain: ${{ matrix.rust }}
+          args: "--locked --release"
+          strip: true
+
+      - name: Build archive
+        shell: bash
+        run: |
+          binary_name="comic-fake-view"
+          dirname="$binary_name-${{ needs.create-release.outputs.version}}-${{ matrix.target }}"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            binary_name="comic-fake-view.exe"
+          fi
+          mv "target/${{ matrix.target }}/release/$binary_name" $binary_name
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a "$dirname.zip" "$binary_name"
+            echo "ASSET=$dirname.zip" >> $GITHUB_ENV
+          else
+            tar -czf "$dirname.tar.gz" "$binary_name"
+            echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+          fi
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.ASSET }}
