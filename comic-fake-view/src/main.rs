@@ -5,20 +5,13 @@ use chromiumoxide::{Browser, BrowserConfig};
 use color_eyre::{eyre::Context, Result};
 use futures::StreamExt;
 use notify_rust::Notification;
-use tokio::{fs, time::sleep};
+use tokio::time::sleep;
 
 const REMOTE_CHAPTER_LIST: &str =
     "https://raw.githubusercontent.com/akagiyuu/comic-fake-view/refs/heads/main/chapters.txt";
-const LOCAL_CHAPTER_LIST: &str = "chapters.txt";
 
 async fn get_chapter_list() -> Result<String> {
-    let chapters = if !fs::try_exists(LOCAL_CHAPTER_LIST).await? {
-        let chapters = reqwest::get(REMOTE_CHAPTER_LIST).await?.text().await?;
-        fs::write(LOCAL_CHAPTER_LIST, &chapters).await?;
-        chapters
-    } else {
-        fs::read_to_string(LOCAL_CHAPTER_LIST).await?
-    };
+    let chapters = reqwest::get(REMOTE_CHAPTER_LIST).await?.text().await?;
 
     Ok(chapters)
 }
