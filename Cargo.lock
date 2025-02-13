@@ -306,8 +306,9 @@ version = "0.1.0"
 dependencies = [
  "color-eyre",
  "futures",
- "regex",
  "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

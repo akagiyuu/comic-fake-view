@@ -3,76 +3,99 @@ use futures::{
     stream::{self},
     StreamExt,
 };
-use regex::Regex;
+use serde::Deserialize;
+use serde_json::Value;
 use tokio::fs;
 
 const BASE_URL: &str = "https://cmangag.com";
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 struct ComicInfo {
     id: String,
     url: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+struct ComicRaw {
+    info: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ComicRawList {
+    data: Vec<ComicRaw>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChapterRaw {
+    info: String,
+}
+
+#[derive(Debug, Deserialize)]
 struct ChapterInfo {
-    id: String,
+    id: Value,
     num: String,
 }
 
-fn query_key(key: &str, data: &str) -> Vec<String> {
-    let re = Regex::new(&format!(r#"\\\"{}\\\":\\\"([^"]+)\\\""#, key)).unwrap();
-    re.captures_iter(data)
-        .map(|cap| cap.get(1).unwrap().as_str().to_string())
-        .collect()
-}
-
 fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String {
+    let chapter_id = chapter_info.id.to_string();
+
     format!(
         "{}/album/{}/chapter-{}-{}",
-        BASE_URL, comic_info.url, chapter_info.num, chapter_info.id
+        BASE_URL,
+        comic_info.url,
+        chapter_info.num,
+        &chapter_id[1..chapter_id.len() - 1]
     )
 }
 
-async fn get_comics() -> Result<Vec<ComicInfo>> {
+async fn get_comics() -> Vec<ComicInfo> {
     let raw_data = reqwest::get(
         "https://cmangag.com/api/home_album_list?file=image&limit=10000&team=5&page=1",
     )
-    .await?
+    .await
+    .unwrap()
     .text()
-    .await?;
+    .await
+    .unwrap();
 
-    Ok(query_key("id", &raw_data)
+    let raw_data: ComicRawList = serde_json::from_str(&raw_data).unwrap();
+
+    raw_data
+        .data
         .into_iter()
-        .zip(query_key("url", &raw_data).into_iter())
-        .map(|(id, url)| ComicInfo { id, url })
-        .collect())
+        .map(|comic_raw| comic_raw.info)
+        .map(|info_raw| serde_json::from_str::<ComicInfo>(&info_raw).unwrap())
+        .collect()
 }
 
-async fn get_chapters(comic_info: &ComicInfo) -> Result<Vec<String>> {
+async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
     let raw_data = reqwest::get(format!(
         "https://cmangag.com/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
         comic_info.id
     ))
-    .await?
+    .await
+    .unwrap()
     .text()
-    .await?;
+    .await
+    .unwrap();
 
-    Ok(query_key("id", &raw_data)
+    let raw_data: Vec<ChapterRaw> = serde_json::from_str(&raw_data).unwrap();
+
+    raw_data
         .into_iter()
-        .zip(query_key("num", &raw_data).into_iter())
-        .map(|(id, num)| ChapterInfo { id, num })
+        .map(|chapter_raw| chapter_raw.info)
+        .map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw).unwrap())
         .map(|chapter_info| get_chapter_url(&chapter_info, comic_info))
-        .collect())
+        .collect()
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let comics = get_comics().await?;
+    let comics = get_comics().await;
     let chapters: Vec<_> = stream::iter(comics)
-        .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await.unwrap()) })
+        .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await) })
         .flatten()
         .collect()
         .await;
