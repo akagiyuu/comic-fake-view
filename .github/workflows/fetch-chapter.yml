@@ -2,6 +2,9 @@ name: fetch-chapter
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   fetch-chapter:
     runs-on: ubuntu-latest
