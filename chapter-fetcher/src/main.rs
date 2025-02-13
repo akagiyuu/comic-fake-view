@@ -66,19 +66,6 @@ async fn get_chapters(comic_info: &ComicInfo) -> Result<Vec<String>> {
         .collect())
 }
 
-// async fn get_chapters(comic_url: String, browser: &Browser) -> impl Stream<Item = String> {
-//     let page = browser.new_page(comic_url).await.unwrap();
-//     let elements = query_wait(CHAPTER_QUERY, &page).await.unwrap();
-//     eprintln!("DEBUGPRINT[110]: main.rs:47: elements={:#?}", elements);
-//     page.close().await.unwrap();
-//
-//     stream::iter(elements).take(1).then(|element| async move {
-//         let chapter = element.attribute("href").await.unwrap().unwrap();
-//         format!("{BASE_URL}{chapter}")
-//     })
-// }
-//
-
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
@@ -90,7 +77,7 @@ async fn main() -> Result<()> {
         .collect()
         .await;
 
-    fs::write("chapters.txt", chapters.join("\n"));
+    fs::write("chapters.txt", chapters.join("\n")).await?;
 
     Ok(())
 }
