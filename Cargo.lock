@@ -413,6 +413,7 @@ dependencies = [
  "color-eyre",
  "futures",
  "notify-rust",
+ "reqwest",
  "tokio",
 ]
 

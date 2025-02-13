@@ -9,4 +9,5 @@ chromiumoxide.workspace = true
 color-eyre.workspace = true
 futures.workspace = true
 notify-rust.workspace = true
+reqwest.workspace = true
 tokio.workspace = true
