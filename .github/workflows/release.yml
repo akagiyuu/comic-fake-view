@@ -44,10 +44,9 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
-        working-directory: ./comic-fake-view
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: './comic-fake-view/src-tauri -> target'
 
       - name: install frontend dependencies
         working-directory: ./comic-fake-view
