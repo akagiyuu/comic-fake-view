@@ -44,15 +44,18 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
+        working-directory: ./comic-fake-view
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
       - name: install frontend dependencies
+        working-directory: ./comic-fake-view
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
         run: bun install # change this to npm or pnpm depending on which one you use.
 
       - uses: tauri-apps/tauri-action@v0
+        working-directory: ./comic-fake-view
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
