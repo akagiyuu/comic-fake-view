@@ -34,6 +34,7 @@ const formSchema = z.object({
     userDataDir: z.string().optional(),
     waitForNavigation: z.number(),
     maxRetries: z.number().min(0).max(10),
+    tabCount: z.number().min(1),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -43,6 +44,7 @@ const defaultValues: FormValues = {
     userDataDir: undefined,
     waitForNavigation: 5,
     maxRetries: 3,
+    tabCount: 5
 };
 
 function App() {
@@ -58,13 +60,15 @@ function App() {
     });
 
     const onSubmit = async (data: FormValues) => {
-        console.log(data);
         await invoke('set_config', {
             config: data,
         });
     };
 
     const runAutomation = async () => {
+        await invoke('set_config', {
+            config: form.getValues(),
+        });
         invoke('run');
         once('total_jobs', async (event) => {
             setTotalJobs(Number(event.payload));
@@ -191,7 +195,7 @@ function App() {
                                     )}
                                 />
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <FormField
                                         control={form.control}
                                         name="waitForNavigation"
@@ -251,6 +255,38 @@ function App() {
                                                 <FormDescription>
                                                     Number of times to retry on
                                                     failure
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="tabCount"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Tab Count
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={10}
+                                                        {...field}
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                Number(
+                                                                    e.target
+                                                                        .value,
+                                                                ),
+                                                            )
+                                                        }
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Number of tab to open
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
