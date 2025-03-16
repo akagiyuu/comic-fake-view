@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './index.css';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -29,6 +29,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, once } from '@tauri-apps/api/event';
 import convert from 'humanize-duration';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
     chromePath: z.string().optional(),
@@ -56,6 +57,10 @@ function App() {
     );
 
     const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        listen('error', (error) => toast.error(error.payload));
+    }, []);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),

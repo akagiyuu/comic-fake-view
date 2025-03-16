@@ -85,6 +85,7 @@ pub async fn run(app_handle: AppHandle) {
                     .await
                     .with_context(|| format!("Failed to read chapter {}", chapter_url))
                 {
+                    println!("{}", error);
                     app_handle.emit("error", error.to_string()).unwrap();
                     break;
                 }
@@ -98,5 +99,6 @@ pub async fn run(app_handle: AppHandle) {
 
     while join_set.join_next().await.is_some() {}
 
+    println!("Finish");
     app_handle.emit("completed", ()).unwrap();
 }
