@@ -1,11 +1,11 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{Browser, BrowserConfig};
 use futures::{lock::Mutex, stream, StreamExt};
 use tauri::{AppHandle, Emitter, Manager};
-use tokio::time::sleep;
+use tokio::{task::JoinSet, time::sleep};
 
 use crate::config::Config;
 
@@ -26,13 +26,19 @@ async fn get_chapter_list() -> Result<String> {
 #[tauri::command]
 pub async fn run(app_handle: AppHandle) {
     let config = app_handle.state::<Mutex<Config>>();
-    let config = config.lock().await;
+    let config = config.lock().await.clone();
 
-    let chapters = get_chapter_list().await.unwrap();
+    let channel = app_handle.state::<(flume::Sender<String>, flume::Receiver<String>)>();
+    if channel.0.is_empty() {
+        let chapters = get_chapter_list().await.unwrap();
+        stream::iter(chapters.lines())
+            .for_each_concurrent(None, |chapter| async {
+                channel.0.send_async(chapter.to_string()).await.unwrap();
+            })
+            .await;
+    }
 
-    app_handle
-        .emit("total_jobs", chapters.lines().count())
-        .unwrap();
+    app_handle.emit("total_jobs", channel.0.len()).unwrap();
 
     let mut browser_config = BrowserConfig::builder()
         .user_data_dir(&config.user_data_dir)
@@ -43,7 +49,7 @@ pub async fn run(app_handle: AppHandle) {
         browser_config = browser_config.chrome_executable(chrome_path);
     }
 
-    let (mut browser, mut handler) = Browser::launch(browser_config.build().unwrap())
+    let (browser, mut handler) = Browser::launch(browser_config.build().unwrap())
         .await
         .unwrap();
 
@@ -53,36 +59,46 @@ pub async fn run(app_handle: AppHandle) {
         }
     });
 
-    let browser_ref = &browser;
-    let config = &config;
-    stream::iter(chapters.lines())
-        .for_each_concurrent(config.tab_count, |chapter_url| {
-            let app_handle = app_handle.clone();
-            async move {
-                let page = browser_ref.new_page("about:blank").await.unwrap();
-                let read_chapter = || async { page.goto(chapter_url).await };
-                let _ = read_chapter
+    let browser_ref = Arc::new(browser);
+    let config = Arc::new(config);
+    let mut join_set = JoinSet::new();
+
+    for _ in 0..config.tab_count {
+        let app_handle = app_handle.clone();
+        let receiver = channel.1.clone();
+
+        let browser_ref = browser_ref.clone();
+        let config = config.clone();
+        join_set.spawn(async move {
+            let page = browser_ref.new_page("about:blank").await.unwrap();
+            let page_ref = &page;
+
+            while let Ok(chapter_url) = receiver.recv_async().await {
+                let chapter_url = &chapter_url;
+                let read_chapter = || async move { page_ref.goto(chapter_url).await };
+                if let Err(error) = read_chapter
                     .retry(ExponentialBuilder::default())
                     .sleep(sleep)
                     .notify(|err, dur: Duration| {
                         println!("retrying {:?} after {:?}", err, dur);
                     })
                     .await
-                    .with_context(|| format!("Failed to read chapter {}", chapter_url));
-                app_handle.emit("complete", ()).unwrap();
+                    .with_context(|| format!("Failed to read chapter {}", chapter_url))
+                {
+                    println!("{}", error);
+                    app_handle.emit("error", error.to_string()).unwrap();
+                    break;
+                }
                 sleep(Duration::from_secs(config.wait_for_navigation)).await;
-
-                let _ = page.close().await;
+                app_handle.emit("complete", ()).unwrap();
             }
-        })
-        .await;
 
-    browser
-        .close()
-        .await
-        .context("Failed to close browser")
-        .unwrap();
-    browser.wait().await.unwrap();
+            let _ = page.close().await;
+        });
+    }
 
+    while join_set.join_next().await.is_some() {}
+
+    println!("Finish");
     app_handle.emit("completed", ()).unwrap();
 }
