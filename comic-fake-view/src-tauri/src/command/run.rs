@@ -61,19 +61,18 @@ pub async fn run(app_handle: AppHandle) {
             async move {
                 let page = browser_ref.new_page("about:blank").await.unwrap();
                 let read_chapter = || async { page.goto(chapter_url).await };
-                read_chapter
+                let _ = read_chapter
                     .retry(ExponentialBuilder::default())
                     .sleep(sleep)
                     .notify(|err, dur: Duration| {
                         println!("retrying {:?} after {:?}", err, dur);
                     })
                     .await
-                    .with_context(|| format!("Failed to read chapter {}", chapter_url))
-                    .unwrap();
+                    .with_context(|| format!("Failed to read chapter {}", chapter_url));
                 app_handle.emit("complete", ()).unwrap();
                 sleep(Duration::from_secs(config.wait_for_navigation)).await;
 
-                page.close().await.unwrap();
+                let _ = page.close().await;
             }
         })
         .await;
