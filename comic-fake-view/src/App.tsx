@@ -59,7 +59,7 @@ function App() {
     const [elapsed, setElapsed] = useState(0);
 
     useEffect(() => {
-        listen('error', (error) => toast.error(error.payload));
+        listen('error', (error) => toast.error(String(error.payload)));
     }, []);
 
     const form = useForm<FormValues>({
