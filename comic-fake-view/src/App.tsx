@@ -287,7 +287,6 @@ function App() {
                                                         <Input
                                                             type="number"
                                                             min={0}
-                                                            max={10}
                                                             {...field}
                                                             onChange={(e) =>
                                                                 field.onChange(
