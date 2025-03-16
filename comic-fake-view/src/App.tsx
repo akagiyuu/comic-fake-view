@@ -44,7 +44,7 @@ const defaultValues: FormValues = {
     userDataDir: undefined,
     waitForNavigation: 5,
     maxRetries: 3,
-    tabCount: 5
+    tabCount: 5,
 };
 
 function App() {
@@ -109,282 +109,293 @@ function App() {
     );
 
     return (
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Puppeteer Configuration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-6"
-                        >
-                            <div className="grid gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="chromePath"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Chrome Path</FormLabel>
-                                            <div className="flex gap-2">
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="/usr/bin/google-chrome"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        handleFilePicker(
-                                                            field,
-                                                            'Chrome executable',
-                                                        )
-                                                    }
-                                                >
-                                                    <FolderOpen className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                            <FormDescription>
-                                                Path to Chrome executable
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+        <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+            <div className="w-full max-w-sm">
+                <div className="grid gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Puppeteer Configuration</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Form {...form}>
+                                <form
+                                    onSubmit={form.handleSubmit(onSubmit)}
+                                    className="space-y-6"
+                                >
+                                    <div className="grid gap-6">
+                                        <FormField
+                                            control={form.control}
+                                            name="chromePath"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Chrome Path
+                                                    </FormLabel>
+                                                    <div className="flex gap-2">
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="/usr/bin/google-chrome"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleFilePicker(
+                                                                    field,
+                                                                    'Chrome executable',
+                                                                )
+                                                            }
+                                                        >
+                                                            <FolderOpen className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    <FormDescription>
+                                                        Path to Chrome
+                                                        executable
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                <FormField
-                                    control={form.control}
-                                    name="userDataDir"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>
-                                                User Data Directory
-                                            </FormLabel>
-                                            <div className="flex gap-2">
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="/path/to/user/data"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        handleFilePicker(
-                                                            field,
-                                                            'User data directory',
-                                                            true,
-                                                        )
-                                                    }
-                                                >
-                                                    <FolderOpen className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                            <FormDescription>
-                                                Path to Chrome user data (for
-                                                saved sessions)
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                        <FormField
+                                            control={form.control}
+                                            name="userDataDir"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        User Data Directory
+                                                    </FormLabel>
+                                                    <div className="flex gap-2">
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="/path/to/user/data"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleFilePicker(
+                                                                    field,
+                                                                    'User data directory',
+                                                                    true,
+                                                                )
+                                                            }
+                                                        >
+                                                            <FolderOpen className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    <FormDescription>
+                                                        Path to Chrome user data
+                                                        (for saved sessions)
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="waitForNavigation"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    Navigation Timeout (s)
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="number"
-                                                        step={1}
-                                                        {...field}
-                                                        onChange={(e) =>
-                                                            field.onChange(
-                                                                Number(
-                                                                    e.target
-                                                                        .value,
-                                                                ),
-                                                            )
-                                                        }
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Time to wait for page
-                                                    navigation
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
+                                        <FormField
+                                            control={form.control}
+                                            name="waitForNavigation"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Navigation Timeout (s)
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            step={1}
+                                                            {...field}
+                                                            onChange={(e) =>
+                                                                field.onChange(
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        Time to wait for page
+                                                        navigation
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="maxRetries"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Max Retries
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            min={0}
+                                                            max={10}
+                                                            {...field}
+                                                            onChange={(e) =>
+                                                                field.onChange(
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        Number of times to retry
+                                                        on failure
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="tabCount"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Tab Count
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            min={0}
+                                                            max={10}
+                                                            {...field}
+                                                            onChange={(e) =>
+                                                                field.onChange(
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        Number of tab to open
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button type="submit" className="gap-2">
+                                            <Save className="w-4 h-4" />
+                                            Save Configuration
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                form.reset(defaultValues)
+                                            }
+                                            className="gap-2"
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                            Reset
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={runAutomation}
+                                            className="gap-2"
+                                            disabled={status == 'running'}
+                                        >
+                                            {status == 'running' ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Play className="w-4 h-4" />
+                                            )}
+                                            Run Now
+                                        </Button>
+                                    </div>
+                                </form>
+                            </Form>
+                        </CardContent>
+                    </Card>
+
+                    {(status === 'running' || status === 'completed') && (
+                        <Card>
+                            <CardContent className="pt-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        {status === 'running' ? (
+                                            <>
+                                                <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                                                <span className="font-medium text-blue-700">
+                                                    Processing automation...
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                <span className="font-medium text-green-700">
+                                                    Automation completed
+                                                </span>
+                                            </>
                                         )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="maxRetries"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    Max Retries
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="number"
-                                                        min={0}
-                                                        max={10}
-                                                        {...field}
-                                                        onChange={(e) =>
-                                                            field.onChange(
-                                                                Number(
-                                                                    e.target
-                                                                        .value,
-                                                                ),
-                                                            )
-                                                        }
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Number of times to retry on
-                                                    failure
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="tabCount"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    Tab Count
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="number"
-                                                        min={0}
-                                                        max={10}
-                                                        {...field}
-                                                        onChange={(e) =>
-                                                            field.onChange(
-                                                                Number(
-                                                                    e.target
-                                                                        .value,
-                                                                ),
-                                                            )
-                                                        }
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Number of tab to open
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                    </div>
+                                    <div className="text-sm font-medium">
+                                        {completedJobs} of {totalJobs} jobs
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-2">
-                                <Button type="submit" className="gap-2">
-                                    <Save className="w-4 h-4" />
-                                    Save Configuration
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => form.reset(defaultValues)}
-                                    className="gap-2"
-                                >
-                                    <RotateCcw className="w-4 h-4" />
-                                    Reset
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={runAutomation}
-                                    className="gap-2"
-                                    disabled={status == 'running'}
-                                >
-                                    {status == 'running' ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Play className="w-4 h-4" />
-                                    )}
-                                    Run Now
-                                </Button>
-                            </div>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+                                <div className="relative pt-1">
+                                    <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                                        <div
+                                            style={{
+                                                width: `${progressPercentage}%`,
+                                            }}
+                                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${
+                                                status === 'completed'
+                                                    ? 'bg-green-500'
+                                                    : 'bg-blue-500'
+                                            }`}
+                                        ></div>
+                                    </div>
+                                </div>
 
-            {(status === 'running' || status === 'completed') && (
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                {status === 'running' ? (
-                                    <>
-                                        <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                                        <span className="font-medium text-blue-700">
-                                            Processing automation...
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                        <span className="font-medium text-green-700">
-                                            Automation completed
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                            <div className="text-sm font-medium">
-                                {completedJobs} of {totalJobs} jobs
-                            </div>
-                        </div>
-
-                        <div className="relative pt-1">
-                            <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
-                                <div
-                                    style={{ width: `${progressPercentage}%` }}
-                                    className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${
-                                        status === 'completed'
-                                            ? 'bg-green-500'
-                                            : 'bg-blue-500'
-                                    }`}
-                                ></div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between mt-1 text-xs text-gray-500">
-                            <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {status === 'completed'
-                                    ? `Completed in ${(totalJobs * form.getValues('waitForNavigation')).toFixed(1)}s`
-                                    : 'Estimated time remaining: ' +
-                                      (
-                                          (totalJobs - completedJobs) *
-                                          form.getValues('waitForNavigation')
-                                      ).toFixed(1) +
-                                      's'}
-                            </div>
-                            <div>{progressPercentage}%</div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {status === 'completed'
+                                            ? `Completed in ${(totalJobs * form.getValues('waitForNavigation')).toFixed(1)}s`
+                                            : 'Estimated time remaining: ' +
+                                              (
+                                                  (totalJobs - completedJobs) *
+                                                  form.getValues(
+                                                      'waitForNavigation',
+                                                  )
+                                              ).toFixed(1) +
+                                              's'}
+                                    </div>
+                                    <div>{progressPercentage}%</div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
