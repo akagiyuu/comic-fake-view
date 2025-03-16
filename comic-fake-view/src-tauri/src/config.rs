@@ -19,7 +19,7 @@ const fn default_tab_count() -> usize {
     5
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     pub chrome_path: Option<String>,
