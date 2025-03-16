@@ -14,6 +14,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![command::set_config, command::run])
         .setup(|app| {
             app.manage(Mutex::new(Config::default()));
+            app.manage(flume::unbounded::<String>());
             Ok(())
         })
         .run(tauri::generate_context!())

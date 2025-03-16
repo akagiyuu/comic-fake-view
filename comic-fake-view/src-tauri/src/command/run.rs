@@ -28,11 +28,17 @@ pub async fn run(app_handle: AppHandle) {
     let config = app_handle.state::<Mutex<Config>>();
     let config = config.lock().await;
 
-    let chapters = get_chapter_list().await.unwrap();
+    let channel = app_handle.state::<(flume::Sender<String>, flume::Receiver<String>)>();
+    if channel.0.is_empty() {
+        let chapters = get_chapter_list().await.unwrap();
+        stream::iter(chapters.lines())
+            .for_each_concurrent(None, |chapter| async {
+                channel.0.send_async(chapter.to_string()).await.unwrap();
+            })
+            .await;
+    }
 
-    app_handle
-        .emit("total_jobs", chapters.lines().count())
-        .unwrap();
+    app_handle.emit("total_jobs", channel.0.len()).unwrap();
 
     let mut browser_config = BrowserConfig::builder()
         .user_data_dir(&config.user_data_dir)
@@ -55,22 +61,34 @@ pub async fn run(app_handle: AppHandle) {
 
     let browser_ref = &browser;
     let config = &config;
-    stream::iter(chapters.lines())
-        .for_each_concurrent(config.tab_count, |chapter_url| {
+
+    stream::iter(0..20)
+        .for_each_concurrent(config.tab_count, |_| {
             let app_handle = app_handle.clone();
+            let receiver = channel.1.clone();
+
             async move {
                 let page = browser_ref.new_page("about:blank").await.unwrap();
-                let read_chapter = || async { page.goto(chapter_url).await };
-                let _ = read_chapter
-                    .retry(ExponentialBuilder::default())
-                    .sleep(sleep)
-                    .notify(|err, dur: Duration| {
-                        println!("retrying {:?} after {:?}", err, dur);
-                    })
-                    .await
-                    .with_context(|| format!("Failed to read chapter {}", chapter_url));
-                app_handle.emit("complete", ()).unwrap();
-                sleep(Duration::from_secs(config.wait_for_navigation)).await;
+                let page_ref = &page;
+
+                while let Ok(chapter_url) = receiver.recv_async().await {
+                    let chapter_url = &chapter_url;
+                    let read_chapter = || async move { page_ref.goto(chapter_url).await };
+                    if read_chapter
+                        .retry(ExponentialBuilder::default())
+                        .sleep(sleep)
+                        .notify(|err, dur: Duration| {
+                            println!("retrying {:?} after {:?}", err, dur);
+                        })
+                        .await
+                        .with_context(|| format!("Failed to read chapter {}", chapter_url))
+                        .is_err()
+                    {
+                        break;
+                    }
+                    sleep(Duration::from_secs(config.wait_for_navigation)).await;
+                    app_handle.emit("complete", ()).unwrap();
+                }
 
                 let _ = page.close().await;
             }

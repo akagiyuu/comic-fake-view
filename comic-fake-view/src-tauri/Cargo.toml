@@ -31,4 +31,5 @@ reqwest = "0.12.12"
 anyhow = "1.0.97"
 backon = "1.4.0"
 tokio = "1.43.0"
+flume = "0.11.1"
 
