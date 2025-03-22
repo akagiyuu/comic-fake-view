@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use tokio::fs;
 
-const BASE_URL: &str = "https://cmangax.com";
+const BASE_URL: &str = "https://cmangaax.com";
 
 #[derive(Debug, Deserialize)]
 struct ComicInfo {
