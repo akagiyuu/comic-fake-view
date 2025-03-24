@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import './index.css';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +13,8 @@ import {
     CheckCircle2,
     Clock,
     Loader2,
+    Moon,
+    Sun,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +34,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, once } from '@tauri-apps/api/event';
 import convert from 'humanize-duration';
 import { toast } from 'sonner';
+import { useTheme } from '@/components/theme-provider';
 
 const formSchema = z.object({
     chromePath: z.string().optional(),
@@ -55,6 +60,7 @@ function App() {
     const [status, setStatus] = useState<'idle' | 'running' | 'completed'>(
         'idle',
     );
+    const { theme, setTheme } = useTheme();
 
     const [elapsed, setElapsed] = useState(0);
 
@@ -101,7 +107,7 @@ function App() {
     async function handleFilePicker(
         field: any,
         type: string,
-        isDirectory: boolean = false,
+        isDirectory = false,
     ) {
         const path = await open({
             multiple: false,
@@ -121,7 +127,23 @@ function App() {
 
     return (
         <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-            <div className="grid gap-6">
+            <div className="grid gap-6 w-full max-w-4xl">
+                <div className="flex justify-end">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                            setTheme(theme === 'dark' ? 'light' : 'dark')
+                        }
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? (
+                            <Sun className="h-5 w-5" />
+                        ) : (
+                            <Moon className="h-5 w-5" />
+                        )}
+                    </Button>
+                </div>
                 <Card>
                     <CardHeader>
                         <CardTitle>Puppeteer Configuration</CardTitle>
@@ -352,14 +374,14 @@ function App() {
                                     {status === 'running' ? (
                                         <>
                                             <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                                            <span className="font-medium text-blue-700">
+                                            <span className="font-medium text-blue-700 dark:text-blue-400">
                                                 Processing automation...
                                             </span>
                                         </>
                                     ) : (
                                         <>
                                             <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                            <span className="font-medium text-green-700">
+                                            <span className="font-medium text-green-700 dark:text-green-400">
                                                 Automation completed
                                             </span>
                                         </>
@@ -371,7 +393,7 @@ function App() {
                             </div>
 
                             <div className="relative pt-1">
-                                <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                                <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
                                     <div
                                         style={{
                                             width: `${progressPercentage}%`,
@@ -386,7 +408,7 @@ function App() {
                             </div>
 
                             {status === 'completed' ? (
-                                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                                <div className="flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
                                     <div className="flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
                                         {`Completed in ${convert(elapsed)}`}
