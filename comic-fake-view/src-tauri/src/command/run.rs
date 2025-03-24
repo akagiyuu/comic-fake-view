@@ -5,7 +5,7 @@ use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{Browser, BrowserConfig};
 use futures::{lock::Mutex, stream, StreamExt};
 use tauri::{AppHandle, Emitter, Manager};
-use tokio::{task::JoinSet, time::sleep};
+use tokio::{sync::RwLock, task::JoinSet, time::sleep};
 
 use crate::config::Config;
 
@@ -59,7 +59,7 @@ pub async fn run(app_handle: AppHandle) {
         }
     });
 
-    let browser_ref = Arc::new(browser);
+    let browser_ref = Arc::new(RwLock::new(browser));
     let config = Arc::new(config);
     let mut join_set = JoinSet::new();
 
@@ -70,7 +70,12 @@ pub async fn run(app_handle: AppHandle) {
         let browser_ref = browser_ref.clone();
         let config = config.clone();
         join_set.spawn(async move {
-            let page = browser_ref.new_page("about:blank").await.unwrap();
+            let page = browser_ref
+                .read()
+                .await
+                .new_page("about:blank")
+                .await
+                .unwrap();
             let page_ref = &page;
 
             while let Ok(chapter_url) = receiver.recv_async().await {
@@ -100,5 +105,7 @@ pub async fn run(app_handle: AppHandle) {
     while join_set.join_next().await.is_some() {}
 
     println!("Finish");
+    browser_ref.write().await.close().await.unwrap();
+    browser_ref.write().await.wait().await.unwrap();
     app_handle.emit("completed", ()).unwrap();
 }
