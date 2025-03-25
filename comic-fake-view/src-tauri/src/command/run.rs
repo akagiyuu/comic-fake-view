@@ -32,7 +32,6 @@ pub async fn run(app_handle: AppHandle) {
     if channel.0.is_empty() {
         let chapters = get_chapter_list().await.unwrap();
         stream::iter(chapters.lines())
-            .take(10)
             .for_each_concurrent(None, |chapter| async {
                 channel.0.send_async(chapter.to_string()).await.unwrap();
             })
