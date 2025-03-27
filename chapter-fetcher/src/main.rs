@@ -1,3 +1,5 @@
+use std::{env, sync::LazyLock};
+
 use color_eyre::Result;
 use futures::{
     stream::{self},
@@ -7,7 +9,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use tokio::fs;
 
-const BASE_URL: &str = "https://cmangaax.com";
+static BASE_URL: LazyLock<String> = LazyLock::new(|| env::var("BASE_URL").unwrap());
 
 #[derive(Debug, Deserialize)]
 struct ComicInfo {
@@ -41,7 +43,7 @@ fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String
 
     format!(
         "{}/album/{}/chapter-{}-{}",
-        BASE_URL,
+        BASE_URL.as_str(),
         comic_info.url,
         chapter_info.num,
         &chapter_id[1..chapter_id.len() - 1]
@@ -49,9 +51,10 @@ fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String
 }
 
 async fn get_comics() -> Vec<ComicInfo> {
-    let raw_data = reqwest::get(
-        "https://cmangag.com/api/home_album_list?file=image&limit=10000&team=5&page=1",
-    )
+    let raw_data = reqwest::get(format!(
+        "{}/api/home_album_list?file=image&limit=10000&team=5&page=1",
+        BASE_URL.as_str()
+    ))
     .await
     .unwrap()
     .text()
@@ -70,7 +73,8 @@ async fn get_comics() -> Vec<ComicInfo> {
 
 async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
     let raw_data = reqwest::get(format!(
-        "https://cmangag.com/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
+        "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
+        BASE_URL.as_str(),
         comic_info.id
     ))
     .await
