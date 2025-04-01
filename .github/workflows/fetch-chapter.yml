@@ -10,6 +10,7 @@ permissions:
 jobs:
   fetch-chapter:
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       version: ${{ env.VERSION }}
     steps:
@@ -32,7 +33,6 @@ jobs:
         shell: bash 
         run: |
           cargo run --manifest-path chapter-fetcher/Cargo.toml
-        environment: production
         env:
           BASE_URL: ${{ vars.BASE_URL }}
 
