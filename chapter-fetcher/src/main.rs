@@ -1,4 +1,7 @@
-use std::{env, sync::LazyLock};
+use std::{
+    env,
+    sync::{Arc, LazyLock},
+};
 
 use color_eyre::Result;
 use futures::{
@@ -7,9 +10,12 @@ use futures::{
 };
 use serde::Deserialize;
 use serde_json::Value;
+use sqlx::{Executor, SqlitePool};
 use tokio::fs;
 
 static BASE_URL: LazyLock<String> = LazyLock::new(|| env::var("BASE_URL").unwrap());
+const DATABASE_PATH: &str = "data.db";
+const SCHEMA: &str = include_str!("../../schema.sql");
 
 #[derive(Debug, Deserialize)]
 struct ComicInfo {
@@ -83,7 +89,13 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
     .await
     .unwrap();
 
-    let raw_data: Vec<ChapterRaw> = serde_json::from_str(&raw_data).unwrap_or_default();
+    let raw_data: Vec<ChapterRaw> = match serde_json::from_str(&raw_data) {
+        Ok(v) => v,
+        Err(error) => {
+            println!("Error: {}", error);
+            vec![]
+        }
+    };
 
     raw_data
         .into_iter()
@@ -97,14 +109,25 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
+    fs::File::create(DATABASE_PATH).await?;
+
+    let pool = Arc::new(SqlitePool::connect(&format!("sqlite:{}", DATABASE_PATH)).await?);
+    pool.execute(SCHEMA).await?;
+
     let comics = get_comics().await;
-    let chapters: Vec<_> = stream::iter(comics)
+    stream::iter(comics)
         .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await) })
         .flatten()
-        .collect()
+        .for_each_concurrent(None, |url| async {
+            if let Err(error) = sqlx::query("INSERT INTO jobs(url) VALUES($1)")
+                .bind(url)
+                .execute(pool.as_ref())
+                .await
+            {
+                println!("Error: {}", error);
+            }
+        })
         .await;
-
-    fs::write("chapters.txt", chapters.join("\n")).await?;
 
     Ok(())
 }
