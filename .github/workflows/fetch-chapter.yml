@@ -31,9 +31,10 @@ jobs:
       - name: Fetch
         shell: bash 
         run: |
+          echo $BASE_URL
           cargo run --manifest-path chapter-fetcher/Cargo.toml
         env:
-          BASE_URL: ${{ secrets.BASE_URL }}
+          BASE_URL: ${{ vars.BASE_URL }}
 
       - name: Commit
         uses: EndBug/add-and-commit@v9
