@@ -4,7 +4,11 @@ use std::{
     time::Duration,
 };
 
-use color_eyre::Result;
+use backon::{ExponentialBuilder, Retryable};
+use color_eyre::{
+    eyre::Error,
+    Result,
+};
 use futures::{
     stream::{self},
     StreamExt,
@@ -12,7 +16,7 @@ use futures::{
 use serde::Deserialize;
 use serde_json::Value;
 use sqlx::{sqlite::SqlitePoolOptions, Executor};
-use tokio::fs;
+use tokio::{fs, time::sleep};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -69,7 +73,6 @@ async fn get_comics() -> Vec<ComicInfo> {
     .text()
     .await
     .unwrap();
-
     let raw_data: ComicRawList = serde_json::from_str(&raw_data).unwrap();
 
     raw_data
@@ -81,16 +84,30 @@ async fn get_comics() -> Vec<ComicInfo> {
 }
 
 async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
-    let raw_data = reqwest::get(format!(
-        "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
-        BASE_URL.as_str(),
-        comic_info.id
-    ))
-    .await
-    .unwrap()
-    .text()
-    .await
-    .unwrap();
+    let get_chapter = || async move {
+        let raw_data = reqwest::get(format!(
+            "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
+            BASE_URL.as_str(),
+            comic_info.id
+        ))
+        .await
+        .map_err(Error::from)?
+        .text()
+        .await
+        .map_err(Error::from)?;
+
+        if raw_data.is_empty() {
+            Err(color_eyre::eyre::anyhow!("Empty chapter"))
+        } else {
+            Ok(raw_data)
+        }
+    };
+
+    let raw_data = get_chapter
+        .retry(ExponentialBuilder::default())
+        .sleep(sleep)
+        .await
+        .unwrap_or_default();
 
     let raw_data: Vec<ChapterRaw> = match serde_json::from_str(&raw_data) {
         Ok(v) => v,
