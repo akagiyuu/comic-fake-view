@@ -3,12 +3,12 @@ use std::{sync::Arc, time::Duration};
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{Browser, BrowserConfig};
-use futures::{lock::Mutex, stream, StreamExt};
-use sqlx::{Connection, SqliteConnection, SqlitePool};
+use futures::{lock::Mutex, StreamExt};
+use sqlx::SqlitePool;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
     fs::{self, File},
-    io,
+    io::AsyncWriteExt,
     sync::RwLock,
     task::JoinSet,
     time::sleep,
@@ -22,9 +22,9 @@ const DATBASE_PATH: &str = "data.db";
 
 async fn get_chapter_list() -> Result<()> {
     let response = reqwest::get(REMOTE_CHAPTER_LIST).await?;
-    let body = response.text().await?;
     let mut out = File::create(DATBASE_PATH).await?;
-    io::copy(&mut body.as_bytes(), &mut out).await?;
+    let content = response.bytes().await?;
+    out.write_all(&content).await?;
 
     Ok(())
 }
@@ -51,7 +51,7 @@ pub async fn run(app_handle: AppHandle) {
     app_handle.emit("total_jobs", jobs.len()).unwrap();
 
     for job in jobs {
-        sender.send(job).unwrap();
+        sender.send_async(job).await.unwrap();
     }
 
     let mut browser_config = BrowserConfig::builder()
@@ -109,10 +109,11 @@ pub async fn run(app_handle: AppHandle) {
                     break;
                 }
                 sleep(Duration::from_secs(config.wait_for_navigation)).await;
-                sqlx::query("UPDATE FROM jobs SET is_open = true WHERE url = $1")
+                sqlx::query("UPDATE jobs SET is_read = true WHERE url = $1")
                     .bind(chapter_url)
                     .execute(pool.as_ref())
-                    .await.unwrap();
+                    .await
+                    .unwrap();
                 app_handle.emit("complete", ()).unwrap();
             }
 
@@ -120,7 +121,9 @@ pub async fn run(app_handle: AppHandle) {
         });
     }
 
-    let job_count: u64 = sqlx::query_scalar("SELECT COUNT(*) FROM jobs WHERE is_open = false")
+    while join_set.join_next().await.is_some() {}
+
+    let job_count: u64 = sqlx::query_scalar("SELECT COUNT(*) FROM jobs WHERE is_read = false")
         .fetch_one(pool.as_ref())
         .await
         .unwrap();
@@ -128,9 +131,10 @@ pub async fn run(app_handle: AppHandle) {
         fs::remove_file(DATBASE_PATH).await.unwrap();
     }
 
+    tokio::spawn(async move {
+        browser_ref.write().await.close().await.unwrap();
+    });
     println!("Finish");
-    browser_ref.write().await.close().await.unwrap();
-    browser_ref.write().await.wait().await.unwrap();
 
     app_handle.emit("completed", ()).unwrap();
 }
