@@ -96,7 +96,7 @@ pub async fn run(app_handle: AppHandle) {
                 let chapter_url = &chapter_url;
                 let read_chapter = || async move { page_ref.goto(chapter_url).await };
                 if let Err(error) = read_chapter
-                    .retry(ExponentialBuilder::default())
+                    .retry(ExponentialBuilder::default().with_max_times(config.max_retries))
                     .sleep(sleep)
                     .notify(|err, dur: Duration| {
                         println!("retrying {:?} after {:?}", err, dur);
