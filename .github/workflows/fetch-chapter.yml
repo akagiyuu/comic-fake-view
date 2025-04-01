@@ -31,8 +31,8 @@ jobs:
       - name: Fetch
         shell: bash 
         run: |
-          echo $BASE_URL
           cargo run --manifest-path chapter-fetcher/Cargo.toml
+        environment: production
         env:
           BASE_URL: ${{ vars.BASE_URL }}
 
