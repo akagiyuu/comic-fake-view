@@ -32,4 +32,5 @@ anyhow = "1.0.97"
 backon = "1.4.0"
 tokio = "1.43.0"
 flume = "0.11.1"
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "sqlite"] }
 
