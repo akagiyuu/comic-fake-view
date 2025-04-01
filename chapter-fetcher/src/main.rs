@@ -1,15 +1,28 @@
-use std::{env, sync::LazyLock};
+use std::{
+    env,
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
 
-use color_eyre::Result;
+use backon::{ExponentialBuilder, Retryable};
+use color_eyre::{
+    eyre::Error,
+    Result,
+};
 use futures::{
     stream::{self},
     StreamExt,
 };
 use serde::Deserialize;
 use serde_json::Value;
-use tokio::fs;
+use sqlx::{sqlite::SqlitePoolOptions, Executor};
+use tokio::{fs, time::sleep};
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 static BASE_URL: LazyLock<String> = LazyLock::new(|| env::var("BASE_URL").unwrap());
+const DATABASE_PATH: &str = "data.db";
+const SCHEMA: &str = include_str!("../../schema.sql");
 
 #[derive(Debug, Deserialize)]
 struct ComicInfo {
@@ -60,7 +73,6 @@ async fn get_comics() -> Vec<ComicInfo> {
     .text()
     .await
     .unwrap();
-
     let raw_data: ComicRawList = serde_json::from_str(&raw_data).unwrap();
 
     raw_data
@@ -72,18 +84,39 @@ async fn get_comics() -> Vec<ComicInfo> {
 }
 
 async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
-    let raw_data = reqwest::get(format!(
-        "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
-        BASE_URL.as_str(),
-        comic_info.id
-    ))
-    .await
-    .unwrap()
-    .text()
-    .await
-    .unwrap();
+    let get_chapter = || async move {
+        let raw_data = reqwest::get(format!(
+            "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
+            BASE_URL.as_str(),
+            comic_info.id
+        ))
+        .await
+        .map_err(Error::from)?
+        .text()
+        .await
+        .map_err(Error::from)?;
 
-    let raw_data: Vec<ChapterRaw> = serde_json::from_str(&raw_data).unwrap_or_default();
+        if raw_data.is_empty() {
+            Err(color_eyre::eyre::anyhow!("Empty chapter"))
+        } else {
+            Ok(raw_data)
+        }
+    };
+
+    let raw_data = get_chapter
+        .retry(ExponentialBuilder::default())
+        .sleep(sleep)
+        .await
+        .unwrap_or_default();
+
+    let raw_data: Vec<ChapterRaw> = match serde_json::from_str(&raw_data) {
+        Ok(v) => v,
+        Err(error) => {
+            tracing::error!("{:?}", comic_info);
+            tracing::error!("{}", error);
+            vec![]
+        }
+    };
 
     raw_data
         .into_iter()
@@ -96,6 +129,18 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .pretty()
+                .with_timer(fmt::time::ChronoLocal::rfc_3339()),
+        )
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .init();
 
     let comics = get_comics().await;
     let chapters: Vec<_> = stream::iter(comics)
@@ -104,7 +149,27 @@ async fn main() -> Result<()> {
         .collect()
         .await;
 
-    fs::write("chapters.txt", chapters.join("\n")).await?;
+    tracing::info!("Number of jobs: {}", chapters.len());
+
+    fs::File::create(DATABASE_PATH).await?;
+
+    let pool = Arc::new(
+        SqlitePoolOptions::new()
+            .acquire_slow_threshold(Duration::MAX)
+            .connect(&format!("sqlite:{}", DATABASE_PATH))
+            .await?,
+    );
+    pool.execute(SCHEMA).await?;
+
+    for url in chapters {
+        if let Err(error) = sqlx::query("INSERT INTO jobs(url) VALUES($1)")
+            .bind(url)
+            .execute(pool.as_ref())
+            .await
+        {
+            tracing::error!("{}", error);
+        }
+    }
 
     Ok(())
 }
