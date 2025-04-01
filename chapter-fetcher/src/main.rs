@@ -1,6 +1,7 @@
 use std::{
     env,
     sync::{Arc, LazyLock},
+    time::Duration,
 };
 
 use color_eyre::Result;
@@ -10,8 +11,10 @@ use futures::{
 };
 use serde::Deserialize;
 use serde_json::Value;
-use sqlx::{Executor, SqlitePool};
+use sqlx::{sqlite::SqlitePoolOptions, Executor};
 use tokio::fs;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 static BASE_URL: LazyLock<String> = LazyLock::new(|| env::var("BASE_URL").unwrap());
 const DATABASE_PATH: &str = "data.db";
@@ -92,7 +95,8 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
     let raw_data: Vec<ChapterRaw> = match serde_json::from_str(&raw_data) {
         Ok(v) => v,
         Err(error) => {
-            println!("Error: {}", error);
+            tracing::error!("{:?}", comic_info);
+            tracing::error!("{}", error);
             vec![]
         }
     };
@@ -108,26 +112,47 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .pretty()
+                .with_timer(fmt::time::ChronoLocal::rfc_3339()),
+        )
+        .with(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .init();
+
+    let comics = get_comics().await;
+    let chapters: Vec<_> = stream::iter(comics)
+        .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await) })
+        .flatten()
+        .collect()
+        .await;
+
+    tracing::info!("Number of jobs: {}", chapters.len());
 
     fs::File::create(DATABASE_PATH).await?;
 
-    let pool = Arc::new(SqlitePool::connect(&format!("sqlite:{}", DATABASE_PATH)).await?);
+    let pool = Arc::new(
+        SqlitePoolOptions::new()
+            .acquire_slow_threshold(Duration::MAX)
+            .connect(&format!("sqlite:{}", DATABASE_PATH))
+            .await?,
+    );
     pool.execute(SCHEMA).await?;
 
-    let comics = get_comics().await;
-    stream::iter(comics)
-        .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await) })
-        .flatten()
-        .for_each_concurrent(None, |url| async {
-            if let Err(error) = sqlx::query("INSERT INTO jobs(url) VALUES($1)")
-                .bind(url)
-                .execute(pool.as_ref())
-                .await
-            {
-                println!("Error: {}", error);
-            }
-        })
-        .await;
+    for url in chapters {
+        if let Err(error) = sqlx::query("INSERT INTO jobs(url) VALUES($1)")
+            .bind(url)
+            .execute(pool.as_ref())
+            .await
+        {
+            tracing::error!("{}", error);
+        }
+    }
 
     Ok(())
 }
