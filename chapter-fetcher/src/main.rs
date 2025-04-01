@@ -83,7 +83,7 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
     .await
     .unwrap();
 
-    let raw_data: Vec<ChapterRaw> = serde_json::from_str(&raw_data).unwrap();
+    let raw_data: Vec<ChapterRaw> = serde_json::from_str(&raw_data).unwrap_or_default();
 
     raw_data
         .into_iter()
