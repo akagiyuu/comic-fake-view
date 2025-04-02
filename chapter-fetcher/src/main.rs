@@ -5,10 +5,7 @@ use std::{
 };
 
 use backon::{ExponentialBuilder, Retryable};
-use color_eyre::{
-    eyre::Error,
-    Result,
-};
+use color_eyre::{eyre::Error, Result};
 use futures::{
     stream::{self},
     StreamExt,
@@ -49,6 +46,7 @@ struct ChapterRaw {
 struct ChapterInfo {
     id: Value,
     num: String,
+    lock: Option<Value>,
 }
 
 fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String {
@@ -122,6 +120,7 @@ async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
         .into_iter()
         .map(|chapter_raw| chapter_raw.info)
         .map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw).unwrap())
+        .filter(|info| info.lock.is_none())
         .map(|chapter_info| get_chapter_url(&chapter_info, comic_info))
         .collect()
 }
