@@ -1,12 +1,14 @@
 use std::fs::File;
 
+use tauri::Manager;
+use tokio::sync::{watch, Mutex};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+pub mod browser;
 pub mod command;
 pub mod config;
 pub mod database;
-pub mod browser;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -36,8 +38,16 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             command::set_config,
             command::get_config,
+            command::stop,
             command::run
         ])
+        .setup(|app_handle| {
+            let (set_is_stopped, is_stopped) = watch::channel(false);
+            app_handle.manage(is_stopped);
+            app_handle.manage(Mutex::new(set_is_stopped));
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
