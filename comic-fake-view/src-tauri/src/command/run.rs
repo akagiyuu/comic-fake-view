@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
-use chromiumoxide::{browser::HeadlessMode, Browser, BrowserConfig};
-use futures::{lock::Mutex, StreamExt};
+use chromiumoxide::{browser::HeadlessMode, error::CdpError, Browser, BrowserConfig};
+use futures::{channel::mpsc::SendError, lock::Mutex, StreamExt};
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
@@ -119,6 +119,9 @@ pub async fn run(app_handle: AppHandle) {
                 if let Err(error) = read_chapter
                     .retry(ExponentialBuilder::default().with_max_times(config.max_retries))
                     .sleep(sleep)
+                    .when(|error| !matches!(error, CdpError::ChannelSendError(chromiumoxide::error::ChannelError::Send(
+                            send_error,
+                        )) if send_error.is_disconnected()))
                     .notify(|err, dur: Duration| {
                         println!("retrying {:?} after {:?}", err, dur);
                     })
