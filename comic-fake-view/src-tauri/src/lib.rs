@@ -3,7 +3,9 @@ use std::fs::File;
 use tauri::Manager;
 use tokio::sync::{watch, Mutex};
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{
+    filter, fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+};
 
 pub mod browser;
 pub mod command;
@@ -13,17 +15,20 @@ pub mod database;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_file = File::create("tracing.log").unwrap();
+    let filter = filter::filter_fn(|metadata| !metadata.target().contains("chromiumoxide"));
 
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
                 .json()
-                .with_writer(log_file),
+                .with_writer(log_file)
+                .with_filter(filter.clone()),
         )
         .with(
             tracing_subscriber::fmt::layer()
                 .pretty()
-                .with_timer(fmt::time::ChronoLocal::rfc_3339()),
+                .with_timer(fmt::time::ChronoLocal::rfc_3339())
+                .with_filter(filter),
         )
         .with(
             EnvFilter::builder()
