@@ -13,10 +13,14 @@ pub fn run() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(log_file),
+        )
+        .with(
+            tracing_subscriber::fmt::layer()
                 .pretty()
                 .with_timer(fmt::time::ChronoLocal::rfc_3339()),
         )
-        .with(tracing_subscriber::fmt::layer().with_writer(log_file))
         .with(
             EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
