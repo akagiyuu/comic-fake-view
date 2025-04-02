@@ -3,9 +3,9 @@ use std::{sync::Arc, time::Duration};
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{browser::HeadlessMode, error::CdpError, Browser, BrowserConfig};
-use futures::{channel::mpsc::SendError, lock::Mutex, StreamExt};
+use futures::StreamExt;
 use sqlx::SqlitePool;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
