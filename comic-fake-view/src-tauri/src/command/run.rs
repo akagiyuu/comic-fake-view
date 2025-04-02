@@ -31,8 +31,7 @@ async fn get_chapter_list() -> Result<()> {
 
 #[tauri::command]
 pub async fn run(app_handle: AppHandle) {
-    let config = app_handle.state::<Mutex<Config>>();
-    let config = config.lock().await.clone();
+    let config = Config::load();
 
     if !fs::try_exists(DATBASE_PATH).await.unwrap() {
         get_chapter_list().await.unwrap();
