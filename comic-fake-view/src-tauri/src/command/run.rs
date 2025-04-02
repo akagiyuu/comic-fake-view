@@ -122,12 +122,12 @@ pub async fn run(app_handle: AppHandle) {
                             send_error,
                         )) if send_error.is_disconnected()))
                     .notify(|err, dur: Duration| {
-                        println!("retrying {:?} after {:?}", err, dur);
+                        tracing::warn!("retrying {:?} after {:?}", err, dur);
                     })
                     .await
                     .with_context(|| format!("Failed to read chapter {}", chapter_url))
                 {
-                    println!("{}", error);
+                    tracing::error!("{}", error);
                     app_handle.emit("error", error.to_string()).unwrap();
                     break;
                 }
@@ -157,7 +157,7 @@ pub async fn run(app_handle: AppHandle) {
     tokio::spawn(async move {
         browser_ref.write().await.close().await.unwrap();
     });
-    println!("Finish");
+    tracing::info!("Finish");
 
     app_handle.emit("completed", ()).unwrap();
 }

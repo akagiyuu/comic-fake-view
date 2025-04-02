@@ -64,6 +64,7 @@ impl Config {
     }
 
     pub async fn save(&self) -> Result<()> {
+        tracing::info!("new config created: {:?}", self);
         let toml = toml::to_string_pretty(self)?;
         fs::write(format!("{}.toml", CONFIG_FILE_NAME), toml).await?;
 
