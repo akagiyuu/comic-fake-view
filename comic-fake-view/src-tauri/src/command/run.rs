@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
     sync::{watch, Mutex, RwLock},
     task::JoinSet,
+    time::timeout,
 };
 
 use crate::{
@@ -68,17 +69,20 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
 
     database::clean(&pool).await?;
 
-    browser.write().await.close().await?;
+    timeout(Duration::from_secs(5), async move {
+        browser.write().await.close().await;
+    })
+    .await?;
     tracing::info!("Finish");
-
-    app_handle.emit("completed", ())?;
 
     Ok(())
 }
 
 #[tauri::command]
 pub async fn run(app_handle: AppHandle) {
-    if let Err(error) = _run(app_handle).await {
+    if let Err(error) = _run(app_handle.clone()).await {
         tracing::error!("{:?}", error)
     }
+
+    app_handle.emit("completed", ()).unwrap();
 }
