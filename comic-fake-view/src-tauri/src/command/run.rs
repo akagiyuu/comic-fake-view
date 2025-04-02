@@ -42,7 +42,6 @@ pub async fn run(app_handle: AppHandle) {
 
             let is_stopped = app_handle.state::<watch::Receiver<bool>>();
             while let Ok(chapter_url) = receiver.recv_timeout(Duration::from_secs(10)) {
-                tracing::info!("{:?}", is_stopped);
                 if *is_stopped.borrow() {
                     break;
                 }
