@@ -3,9 +3,9 @@ use std::{sync::Arc, time::Duration};
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{browser::HeadlessMode, error::CdpError, Browser, BrowserConfig};
-use futures::{channel::mpsc::SendError, lock::Mutex, StreamExt};
+use futures::StreamExt;
 use sqlx::SqlitePool;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -31,8 +31,7 @@ async fn get_chapter_list() -> Result<()> {
 
 #[tauri::command]
 pub async fn run(app_handle: AppHandle) {
-    let config = app_handle.state::<Mutex<Config>>();
-    let config = config.lock().await.clone();
+    let config = Config::load();
 
     if !fs::try_exists(DATBASE_PATH).await.unwrap() {
         get_chapter_list().await.unwrap();

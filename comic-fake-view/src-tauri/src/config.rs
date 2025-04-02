@@ -1,4 +1,8 @@
-use serde::Deserialize;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use tokio::fs;
+
+const CONFIG_FILE_NAME: &str = "config";
 
 fn default_user_data_dir() -> String {
     format!(
@@ -8,18 +12,18 @@ fn default_user_data_dir() -> String {
 }
 
 const fn default_wait_for_navigation() -> u64 {
-    5000
+    1
 }
 
 const fn default_max_retries() -> usize {
-    3
+    10
 }
 
 const fn default_tab_count() -> usize {
     5
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     pub chrome_path: Option<String>,
@@ -33,7 +37,7 @@ pub struct Config {
 
     pub max_retries: usize,
 
-    pub tab_count: usize
+    pub tab_count: usize,
 }
 
 impl Default for Config {
@@ -44,7 +48,24 @@ impl Default for Config {
             headless: false,
             wait_for_navigation: default_wait_for_navigation(),
             max_retries: default_max_retries(),
-            tab_count: default_tab_count()
+            tab_count: default_tab_count(),
         }
+    }
+}
+
+impl Config {
+    pub fn load() -> Self {
+        ::config::Config::builder()
+            .add_source(config::File::with_name(CONFIG_FILE_NAME))
+            .build()
+            .and_then(|raw| raw.try_deserialize::<Self>())
+            .unwrap_or_default()
+    }
+
+    pub async fn save(&self) -> Result<()> {
+        let toml = toml::to_string_pretty(self)?;
+        fs::write(format!("{}.toml", CONFIG_FILE_NAME), toml).await?;
+
+        Ok(())
     }
 }
