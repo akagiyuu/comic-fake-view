@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
-use chromiumoxide::{Browser, BrowserConfig};
-use futures::{lock::Mutex, StreamExt};
+use chromiumoxide::{browser::HeadlessMode, error::CdpError, Browser, BrowserConfig};
+use futures::{channel::mpsc::SendError, lock::Mutex, StreamExt};
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
@@ -56,8 +56,29 @@ pub async fn run(app_handle: AppHandle) {
 
     let mut browser_config = BrowserConfig::builder()
         .user_data_dir(&config.user_data_dir)
-        .arg(format!("--profile-directory={}", "Default"))
-        .with_head();
+        .args(vec![
+            &format!("--profile-directory={}", "Default"),
+            "--disable-gpu",            // Disable GPU hardware acceleration
+            "--disable-extensions",     // Disable extensions
+            "--disable-dev-shm-usage",  // Overcome limited resource problems
+            "--no-sandbox",             // Bypass OS security model
+            "--disable-setuid-sandbox", // Disable the setuid sandbox
+            "--disable-infobars",       // Prevent infobars from appearing
+            "--disable-notifications",  // Disable web notifications
+            "--disable-popup-blocking", // Disable popup blocking
+            "--disable-background-timer-throttling", // Disable background timer throttling
+            "--disable-backgrounding-occluded-windows", // Disable backgrounding of occluded windows
+            "--disable-breakpad",       // Disable the crash reporting
+            "--disable-component-extensions-with-background-pages", // Disable component extensions with background pages
+            "--disable-features=TranslateUI,BlinkGenPropertyTrees", // Disable specific features
+            "--disable-ipc-flooding-protection", // Disable IPC flooding protection
+            "--disable-renderer-backgrounding",  // Disable renderer backgrounding
+        ])
+        .headless_mode(if config.headless {
+            HeadlessMode::True
+        } else {
+            HeadlessMode::False
+        });
 
     if let Some(chrome_path) = &config.chrome_path {
         browser_config = browser_config.chrome_executable(chrome_path);
@@ -96,8 +117,11 @@ pub async fn run(app_handle: AppHandle) {
                 let chapter_url = &chapter_url;
                 let read_chapter = || async move { page_ref.goto(chapter_url).await };
                 if let Err(error) = read_chapter
-                    .retry(ExponentialBuilder::default())
+                    .retry(ExponentialBuilder::default().with_max_times(config.max_retries))
                     .sleep(sleep)
+                    .when(|error| !matches!(error, CdpError::ChannelSendError(chromiumoxide::error::ChannelError::Send(
+                            send_error,
+                        )) if send_error.is_disconnected()))
                     .notify(|err, dur: Duration| {
                         println!("retrying {:?} after {:?}", err, dur);
                     })
