@@ -56,8 +56,24 @@ pub async fn run(app_handle: AppHandle) {
 
     let mut browser_config = BrowserConfig::builder()
         .user_data_dir(&config.user_data_dir)
-        .arg(format!("--profile-directory={}", "Default"))
-        .with_head();
+        .args(vec![
+            &format!("--profile-directory={}", "Default"),
+            "--disable-gpu",            // Disable GPU hardware acceleration
+            "--disable-extensions",     // Disable extensions
+            "--disable-dev-shm-usage",  // Overcome limited resource problems
+            "--no-sandbox",             // Bypass OS security model
+            "--disable-setuid-sandbox", // Disable the setuid sandbox
+            "--disable-infobars",       // Prevent infobars from appearing
+            "--disable-notifications",  // Disable web notifications
+            "--disable-popup-blocking", // Disable popup blocking
+            "--disable-background-timer-throttling", // Disable background timer throttling
+            "--disable-backgrounding-occluded-windows", // Disable backgrounding of occluded windows
+            "--disable-breakpad",       // Disable the crash reporting
+            "--disable-component-extensions-with-background-pages", // Disable component extensions with background pages
+            "--disable-features=TranslateUI,BlinkGenPropertyTrees", // Disable specific features
+            "--disable-ipc-flooding-protection", // Disable IPC flooding protection
+            "--disable-renderer-backgrounding",  // Disable renderer backgrounding
+        ]);
 
     if let Some(chrome_path) = &config.chrome_path {
         browser_config = browser_config.chrome_executable(chrome_path);
