@@ -12,11 +12,11 @@ fn default_user_data_dir() -> String {
 }
 
 const fn default_wait_for_navigation() -> u64 {
-    5
+    1
 }
 
 const fn default_max_retries() -> usize {
-    3
+    10
 }
 
 const fn default_tab_count() -> usize {
