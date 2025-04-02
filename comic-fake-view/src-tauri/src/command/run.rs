@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Result;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
     sync::{watch, Mutex, RwLock},
@@ -12,22 +13,21 @@ use crate::{
     database::{self, job},
 };
 
-#[tauri::command]
-pub async fn run(app_handle: AppHandle) {
+async fn _run(app_handle: AppHandle) -> Result<()> {
     let config = Arc::new(Config::load());
-    let pool = database::init().await.unwrap();
+    let pool = database::init().await?;
 
-    let job_receiver = job::all(&pool).await.unwrap();
-    app_handle.emit("total_jobs", job_receiver.len()).unwrap();
+    let job_receiver = job::all(&pool).await?;
+    app_handle.emit("total_jobs", job_receiver.len())?;
 
-    let browser = Arc::new(RwLock::new(browser::init(&config).await.unwrap()));
+    let browser = Arc::new(RwLock::new(browser::init(&config).await?));
     app_handle
         .state::<Mutex<watch::Sender<bool>>>()
         .lock()
         .await
         .send_replace(false);
 
-    let mut join_set = JoinSet::new();
+    let mut join_set = JoinSet::<Result<()>>::new();
     for _ in 0..config.tab_count {
         let app_handle = app_handle.clone();
         let receiver = job_receiver.clone();
@@ -37,7 +37,7 @@ pub async fn run(app_handle: AppHandle) {
         let pool = pool.clone();
         join_set.spawn(async move {
             let browser_read = browser_ref.read().await;
-            let page = browser::new_blank_tab(&browser_read).await.unwrap();
+            let page = browser::new_blank_tab(&browser_read).await?;
             let page_ref = &page;
 
             let is_stopped = app_handle.state::<watch::Receiver<bool>>();
@@ -47,25 +47,38 @@ pub async fn run(app_handle: AppHandle) {
                 }
                 if let Err(error) = browser::read(&chapter_url, page_ref, &pool, &config).await {
                     tracing::error!("{}", error);
-                    app_handle.emit("error", error.to_string()).unwrap();
+                    app_handle.emit("error", error.to_string())?;
                     break;
                 }
 
-                app_handle.emit("complete", ()).unwrap();
+                app_handle.emit("complete", ())?;
             }
 
-            let _ = page.close().await;
+            page.close().await?;
+
+            Ok(())
         });
     }
 
-    while join_set.join_next().await.is_some() {}
+    while let Some(res) = join_set.join_next().await {
+        if let Err(error) = res {
+            tracing::error!("{:?}", error);
+        }
+    }
 
-    database::clean(&pool).await.unwrap();
+    database::clean(&pool).await?;
 
-    tokio::spawn(async move {
-        browser.write().await.close().await.unwrap();
-    });
+    browser.write().await.close().await?;
     tracing::info!("Finish");
 
-    app_handle.emit("completed", ()).unwrap();
+    app_handle.emit("completed", ())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn run(app_handle: AppHandle) {
+    if let Err(error) = _run(app_handle).await {
+        tracing::error!("{:?}", error)
+    }
 }
