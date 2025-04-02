@@ -23,6 +23,7 @@ const fn default_tab_count() -> usize {
     5
 }
 
+#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {

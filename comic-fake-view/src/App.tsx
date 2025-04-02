@@ -40,8 +40,8 @@ import { useTheme } from '@/components/theme-provider';
 import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
-    chromePath: z.string().nullable(),
-    userDataDir: z.string().nullable(),
+    chromePath: z.string().optional(),
+    userDataDir: z.string().optional(),
     waitForNavigation: z.number(),
     maxRetries: z.number().min(0).max(10),
     tabCount: z.number().min(1),
