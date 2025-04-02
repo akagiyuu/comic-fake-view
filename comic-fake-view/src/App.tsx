@@ -6,10 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
-    Save,
     FolderOpen,
     Play,
-    RotateCcw,
     CheckCircle2,
     Clock,
     Loader2,
@@ -17,6 +15,9 @@ import {
     Sun,
     Monitor,
     EyeOff,
+    Square,
+    XCircle,
+    Save,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -55,12 +56,12 @@ const defaultValues: FormValues = await invoke('get_config');
 function App() {
     const [totalJobs, setTotalJobs] = useState(10);
     const [completedJobs, setCompletedJobs] = useState(0);
-    const [status, setStatus] = useState<'idle' | 'running' | 'completed'>(
-        'idle',
-    );
+    const [status, setStatus] = useState<
+        'idle' | 'running' | 'completed' | 'stopped'
+    >('idle');
     const { theme, setTheme } = useTheme();
-
     const [elapsed, setElapsed] = useState(0);
+    const [isStoppable, setIsStoppable] = useState(false);
 
     useEffect(() => {
         listen('error', (error) => toast.error(String(error.payload)));
@@ -71,34 +72,63 @@ function App() {
         defaultValues,
     });
 
-    const onSubmit = async (data: FormValues) => {
-        await invoke('set_config', {
-            config: data,
-        });
+    const saveConfiguration = async () => {
+        try {
+            await invoke('set_config', {
+                config: form.getValues(),
+            });
+            toast.success('Configuration saved successfully');
+        } catch (error) {
+            toast.error('Failed to save configuration');
+        }
     };
 
     const runAutomation = async () => {
-        await invoke('set_config', {
-            config: form.getValues(),
-        });
-        invoke('run');
-        const start = performance.now();
-
-        once('total_jobs', async (event) => {
-            setTotalJobs(Number(event.payload));
-            setStatus('running');
-            setCompletedJobs(0);
-
-            const unlisten = await listen('complete', () =>
-                setCompletedJobs((prev) => prev + 1),
-            );
-
-            await once('completed', async () => {
-                unlisten();
-                setElapsed(performance.now() - start);
-                setStatus('completed');
+        try {
+            // Save configuration before running
+            await invoke('set_config', {
+                config: form.getValues(),
             });
-        });
+
+            // Start the automation
+            invoke('run');
+            const start = performance.now();
+
+            setStatus('running');
+            setIsStoppable(true);
+
+            once('total_jobs', async (event) => {
+                setTotalJobs(Number(event.payload));
+                setCompletedJobs(0);
+
+                const unlisten = await listen('complete', () =>
+                    setCompletedJobs((prev) => prev + 1),
+                );
+
+                await once('completed', async () => {
+                    unlisten();
+                    setElapsed(performance.now() - start);
+                    setStatus('completed');
+                    setIsStoppable(false);
+                });
+            });
+        } catch (error) {
+            toast.error('Failed to start automation');
+            setStatus('idle');
+            setIsStoppable(false);
+        }
+    };
+
+    const stopAutomation = async () => {
+        try {
+            await invoke('stop');
+            toast.info('Automation stopped');
+            setStatus('stopped');
+            setIsStoppable(false);
+            setElapsed(performance.now() - elapsed);
+        } catch (error) {
+            toast.error('Failed to stop automation');
+        }
     };
 
     // This would be implemented with actual file system access in a desktop app
@@ -148,114 +178,42 @@ function App() {
                     </CardHeader>
                     <CardContent>
                         <Form {...form}>
-                            <form
-                                onSubmit={form.handleSubmit(onSubmit)}
-                                className="space-y-6"
-                            >
-                                <div className="grid gap-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="chromePath"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    Chrome Path
-                                                </FormLabel>
-                                                <div className="flex gap-2">
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="/usr/bin/google-chrome"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            handleFilePicker(
-                                                                field,
-                                                                'Chrome executable',
-                                                            )
-                                                        }
-                                                    >
-                                                        <FolderOpen className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                                <FormDescription>
-                                                    Path to Chrome executable
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="userDataDir"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    User Data Directory
-                                                </FormLabel>
-                                                <div className="flex gap-2">
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="/path/to/user/data"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            handleFilePicker(
-                                                                field,
-                                                                'User data directory',
-                                                                true,
-                                                            )
-                                                        }
-                                                    >
-                                                        <FolderOpen className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                                <FormDescription>
-                                                    Path to Chrome user data
-                                                    (for saved sessions)
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <form className="space-y-6">
+                                <div className="space-y-8">
+                                    {/* Browser Configuration Section */}
+                                    <div className="space-y-4">
                                         <FormField
                                             control={form.control}
-                                            name="waitForNavigation"
+                                            name="chromePath"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Navigation Timeout (s)
+                                                        Chrome Path
                                                     </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            step={1}
-                                                            {...field}
-                                                            onChange={(e) =>
-                                                                field.onChange(
-                                                                    Number(
-                                                                        e.target
-                                                                            .value,
-                                                                    ),
+                                                    <div className="flex gap-2">
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="/usr/bin/google-chrome"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleFilePicker(
+                                                                    field,
+                                                                    'Chrome executable',
                                                                 )
                                                             }
-                                                        />
-                                                    </FormControl>
+                                                        >
+                                                            <FolderOpen className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                     <FormDescription>
-                                                        Time to wait for page
-                                                        navigation
+                                                        Path to Chrome
+                                                        executable
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
@@ -264,31 +222,36 @@ function App() {
 
                                         <FormField
                                             control={form.control}
-                                            name="maxRetries"
+                                            name="userDataDir"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Max Retries
+                                                        User Data Directory
                                                     </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            min={0}
-                                                            max={10}
-                                                            {...field}
-                                                            onChange={(e) =>
-                                                                field.onChange(
-                                                                    Number(
-                                                                        e.target
-                                                                            .value,
-                                                                    ),
+                                                    <div className="flex gap-2">
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="/path/to/user/data"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleFilePicker(
+                                                                    field,
+                                                                    'User data directory',
+                                                                    true,
                                                                 )
                                                             }
-                                                        />
-                                                    </FormControl>
+                                                        >
+                                                            <FolderOpen className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                     <FormDescription>
-                                                        Number of times to retry
-                                                        on failure
+                                                        Path to Chrome user data
                                                     </FormDescription>
                                                     <FormMessage />
                                                 </FormItem>
@@ -297,108 +260,197 @@ function App() {
 
                                         <FormField
                                             control={form.control}
-                                            name="tabCount"
+                                            name="headless"
                                             render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>
-                                                        Tab Count
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            min={0}
-                                                            {...field}
-                                                            onChange={(e) =>
-                                                                field.onChange(
-                                                                    Number(
-                                                                        e.target
-                                                                            .value,
-                                                                    ),
-                                                                )
-                                                            }
-                                                        />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        Number of tab to open
-                                                    </FormDescription>
-                                                    <FormMessage />
+                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="text-base">
+                                                            Headless Mode
+                                                        </FormLabel>
+                                                        <FormDescription>
+                                                            Run browser without
+                                                            visible UI
+                                                        </FormDescription>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <FormControl>
+                                                            <Switch
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={
+                                                                    field.onChange
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        {field.value ? (
+                                                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                        ) : (
+                                                            <Monitor className="h-4 w-4 text-muted-foreground" />
+                                                        )}
+                                                    </div>
                                                 </FormItem>
                                             )}
                                         />
                                     </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="headless"
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                                <div className="space-y-0.5">
-                                                    <FormLabel className="text-base">
-                                                        Headless Mode
-                                                    </FormLabel>
-                                                    <FormDescription>
-                                                        Run browser without
-                                                        visible UI
-                                                    </FormDescription>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <FormControl>
-                                                        <Switch
-                                                            checked={
-                                                                field.value
-                                                            }
-                                                            onCheckedChange={
-                                                                field.onChange
-                                                            }
-                                                        />
-                                                    </FormControl>
-                                                    {field.value ? (
-                                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                                    ) : (
-                                                        <Monitor className="h-4 w-4 text-muted-foreground" />
-                                                    )}
-                                                </div>
-                                            </FormItem>
-                                        )}
-                                    />
+
+                                    {/* Automation Settings Section */}
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-4">
+                                            Automation Settings
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <FormField
+                                                control={form.control}
+                                                name="waitForNavigation"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>
+                                                            Navigation Timeout
+                                                            (s)
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                step={1}
+                                                                {...field}
+                                                                onChange={(e) =>
+                                                                    field.onChange(
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Time to wait for
+                                                            page navigation
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="maxRetries"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>
+                                                            Max Retries
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                max={10}
+                                                                {...field}
+                                                                onChange={(e) =>
+                                                                    field.onChange(
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Number of times to
+                                                            retry on failure
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="tabCount"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>
+                                                            Tab Count
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                min={1}
+                                                                {...field}
+                                                                onChange={(e) =>
+                                                                    field.onChange(
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Number of tabs to
+                                                            open
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <Button type="submit" className="gap-2">
-                                        <Save className="w-4 h-4" />
-                                        Save Configuration
-                                    </Button>
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() =>
-                                            form.reset(defaultValues)
-                                        }
+                                        onClick={saveConfiguration}
                                         className="gap-2"
+                                        disabled={status === 'running'}
                                     >
-                                        <RotateCcw className="w-4 h-4" />
-                                        Reset
+                                        <Save className="w-4 h-4" />
+                                        Save Config
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={runAutomation}
-                                        className="gap-2"
-                                        disabled={status == 'running'}
-                                    >
-                                        {status == 'running' ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Play className="w-4 h-4" />
-                                        )}
-                                        Run Now
-                                    </Button>
+
+                                    {isStoppable ? (
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            onClick={stopAutomation}
+                                            className="gap-2 ml-auto"
+                                        >
+                                            <Square className="w-4 h-4" />
+                                            Stop
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={runAutomation}
+                                            className="gap-2 ml-auto"
+                                            disabled={status === 'running'}
+                                        >
+                                            {status === 'running' ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Play className="w-4 h-4" />
+                                            )}
+                                            Run Now
+                                        </Button>
+                                    )}
                                 </div>
                             </form>
                         </Form>
                     </CardContent>
                 </Card>
 
-                {(status === 'running' || status === 'completed') && (
+                {(status === 'running' ||
+                    status === 'completed' ||
+                    status === 'stopped') && (
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
@@ -410,11 +462,18 @@ function App() {
                                                 Processing automation...
                                             </span>
                                         </>
-                                    ) : (
+                                    ) : status === 'completed' ? (
                                         <>
                                             <CheckCircle2 className="h-5 w-5 text-green-500" />
                                             <span className="font-medium text-green-700 dark:text-green-400">
                                                 Automation completed
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <XCircle className="h-5 w-5 text-amber-500" />
+                                            <span className="font-medium text-amber-700 dark:text-amber-400">
+                                                Automation stopped
                                             </span>
                                         </>
                                     )}
@@ -433,17 +492,21 @@ function App() {
                                         className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${
                                             status === 'completed'
                                                 ? 'bg-green-500'
-                                                : 'bg-blue-500'
+                                                : status === 'stopped'
+                                                  ? 'bg-amber-500'
+                                                  : 'bg-blue-500'
                                         }`}
                                     ></div>
                                 </div>
                             </div>
 
-                            {status === 'completed' ? (
+                            {status !== 'running' ? (
                                 <div className="flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
                                     <div className="flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
-                                        {`Completed in ${convert(elapsed)}`}
+                                        {status === 'stopped'
+                                            ? `Stopped after ${convert(elapsed)}`
+                                            : `Completed in ${convert(elapsed)}`}
                                     </div>
                                     <div>{progressPercentage}%</div>
                                 </div>
