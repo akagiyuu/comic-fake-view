@@ -27,6 +27,8 @@ pub struct Config {
     #[serde(default = "default_user_data_dir")]
     pub user_data_dir: String,
 
+    pub headless: bool,
+
     pub wait_for_navigation: u64,
 
     pub max_retries: usize,
@@ -39,6 +41,7 @@ impl Default for Config {
         Self {
             chrome_path: Default::default(),
             user_data_dir: default_user_data_dir(),
+            headless: false,
             wait_for_navigation: default_wait_for_navigation(),
             max_retries: default_max_retries(),
             tab_count: default_tab_count()

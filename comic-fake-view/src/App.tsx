@@ -15,6 +15,8 @@ import {
     Loader2,
     Moon,
     Sun,
+    Monitor,
+    EyeOff,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,7 @@ import { listen, once } from '@tauri-apps/api/event';
 import convert from 'humanize-duration';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/theme-provider';
+import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
     chromePath: z.string().optional(),
@@ -42,6 +45,7 @@ const formSchema = z.object({
     waitForNavigation: z.number(),
     maxRetries: z.number().min(0).max(10),
     tabCount: z.number().min(1),
+    headless: z.boolean(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -52,6 +56,7 @@ const defaultValues: FormValues = {
     waitForNavigation: 5,
     maxRetries: 3,
     tabCount: 5,
+    headless: false,
 };
 
 function App() {
@@ -328,6 +333,40 @@ function App() {
                                             )}
                                         />
                                     </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="headless"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel className="text-base">
+                                                        Headless Mode
+                                                    </FormLabel>
+                                                    <FormDescription>
+                                                        Run browser without
+                                                        visible UI
+                                                    </FormDescription>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <FormControl>
+                                                        <Switch
+                                                            checked={
+                                                                field.value
+                                                            }
+                                                            onCheckedChange={
+                                                                field.onChange
+                                                            }
+                                                        />
+                                                    </FormControl>
+                                                    {field.value ? (
+                                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                    ) : (
+                                                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
 
                                 <div className="flex gap-2">

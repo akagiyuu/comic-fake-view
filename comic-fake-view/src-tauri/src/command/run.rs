@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
-use chromiumoxide::{Browser, BrowserConfig};
+use chromiumoxide::{browser::HeadlessMode, Browser, BrowserConfig};
 use futures::{lock::Mutex, StreamExt};
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Emitter, Manager};
@@ -73,7 +73,12 @@ pub async fn run(app_handle: AppHandle) {
             "--disable-features=TranslateUI,BlinkGenPropertyTrees", // Disable specific features
             "--disable-ipc-flooding-protection", // Disable IPC flooding protection
             "--disable-renderer-backgrounding",  // Disable renderer backgrounding
-        ]);
+        ])
+        .headless_mode(if config.headless {
+            HeadlessMode::True
+        } else {
+            HeadlessMode::False
+        });
 
     if let Some(chrome_path) = &config.chrome_path {
         browser_config = browser_config.chrome_executable(chrome_path);
