@@ -12,7 +12,7 @@ fn default_user_data_dir() -> String {
 }
 
 const fn default_wait_for_navigation() -> u64 {
-    5000
+    5
 }
 
 const fn default_max_retries() -> usize {

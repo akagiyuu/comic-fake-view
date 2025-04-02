@@ -40,8 +40,8 @@ import { useTheme } from '@/components/theme-provider';
 import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
-    chromePath: z.string().optional(),
-    userDataDir: z.string().optional(),
+    chromePath: z.string().nullable(),
+    userDataDir: z.string().nullable(),
     waitForNavigation: z.number(),
     maxRetries: z.number().min(0).max(10),
     tabCount: z.number().min(1),
@@ -50,14 +50,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const defaultValues: FormValues = {
-    chromePath: undefined,
-    userDataDir: undefined,
-    waitForNavigation: 5,
-    maxRetries: 3,
-    tabCount: 5,
-    headless: false,
-};
+const defaultValues: FormValues = await invoke('get_config');
 
 function App() {
     const [totalJobs, setTotalJobs] = useState(10);
