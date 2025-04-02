@@ -5,6 +5,8 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 
 pub mod command;
 pub mod config;
+pub mod database;
+pub mod browser;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
