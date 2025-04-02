@@ -32,10 +32,18 @@ pub async fn init() -> Result<Arc<SqlitePool>> {
     }
 
     let mut pool = create_pool().await?;
-    if job::count(pool.as_ref()) == 0 {
+    if job::count(pool.as_ref()).await? == 0 {
         fetch_remote().await?;
         pool = create_pool().await?;
     }
 
     Ok(pool)
+}
+
+pub async fn clean(pool: &SqlitePool) -> Result<()> {
+    if job::count(pool).await? == 0 {
+        fs::remove_file(DATABASE_PATH).await?;
+    }
+
+    Ok(())
 }
