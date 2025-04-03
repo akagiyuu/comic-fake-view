@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Result;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
-    sync::{watch, Mutex, RwLock},
+    sync::{watch, Mutex},
     task::JoinSet,
     time::timeout,
 };
@@ -21,7 +21,7 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
     let job_receiver = job::all(&pool).await?;
     app_handle.emit("total_jobs", job_receiver.len())?;
 
-    let browser = Arc::new(RwLock::new(browser::init(&config).await?));
+    let mut browser = browser::init(&config).await?;
     app_handle
         .state::<Mutex<watch::Sender<bool>>>()
         .lock()
@@ -33,19 +33,13 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
         let app_handle = app_handle.clone();
         let receiver = job_receiver.clone();
 
-        let browser_ref = browser.clone();
+        let page = browser::new_blank_tab(&browser).await?;
         let config = config.clone();
         let pool = pool.clone();
         join_set.spawn(async move {
-            let browser_read = browser_ref.read().await;
-            let page = browser::new_blank_tab(&browser_read).await?;
             let page_ref = &page;
 
-            let is_stopped = app_handle.state::<watch::Receiver<bool>>();
             while let Ok(chapter_url) = receiver.recv_timeout(Duration::from_secs(10)) {
-                if *is_stopped.borrow() {
-                    break;
-                }
                 if let Err(error) = browser::read(&chapter_url, page_ref, &pool, &config).await {
                     tracing::error!("{}", error);
                     app_handle.emit("error", error.to_string())?;
@@ -60,17 +54,32 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
             Ok(())
         });
     }
+    let mut is_stopped = app_handle.state::<watch::Receiver<bool>>().inner().clone();
 
-    while let Some(res) = join_set.join_next().await {
-        if let Err(error) = res {
-            tracing::error!("{:?}", error);
+    loop {
+        tokio::select! {
+            // Process completed tasks from the join_set.
+            Some(res) = join_set.join_next() => {
+                if let Err(error) = res {
+                    tracing::error!("{:?}", error);
+                }
+            }
+            // Monitor changes in the is_stopped channel.
+            _ = is_stopped.changed() => {
+                // Check the current value; if it is false, abort all tasks.
+                if *is_stopped.borrow() {
+                    tracing::info!("Received stop signal, aborting join_set.");
+                    join_set.abort_all();
+                    break; // Exit the loop after aborting.
+                }
+            }
         }
     }
 
     database::clean(&pool).await?;
 
     timeout(Duration::from_secs(5), async move {
-        browser.write().await.close().await;
+        browser.close().await;
     })
     .await?;
     tracing::info!("Finish");

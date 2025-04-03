@@ -3,7 +3,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{
-    browser::HeadlessMode, error::CdpError, handler::browser, Browser, BrowserConfig, Page,
+    browser::HeadlessMode, error::CdpError, Browser, BrowserConfig, Page,
 };
 use futures::StreamExt;
 use sqlx::SqlitePool;
