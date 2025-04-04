@@ -64,6 +64,7 @@ fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String
     )
 }
 
+#[tracing::instrument]
 async fn get_comics() -> Result<Vec<ComicInfo>> {
     let raw_data = reqwest::get(format!(
         "{}/api/home_album_list?file=image&limit=10000&team=5&page=1",
