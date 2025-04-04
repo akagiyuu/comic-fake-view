@@ -101,8 +101,7 @@ async fn get_chapters(comic_info: &ComicInfo) -> Result<Vec<String>> {
     Ok(raw_data
         .into_iter()
         .map(|chapter_raw| chapter_raw.info)
-        .map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw))
-        .flatten()
+        .flat_map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw))
         .filter(|info| info.lock.is_none())
         .map(|chapter_info| get_chapter_url(&chapter_info, comic_info))
         .collect())
