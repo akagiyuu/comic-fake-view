@@ -5,7 +5,10 @@ use std::{
 };
 
 use backon::{ExponentialBuilder, Retryable};
-use color_eyre::{eyre::Error, Result};
+use color_eyre::{
+    eyre::{Context, Error},
+    Result,
+};
 use futures::{
     stream::{self},
     StreamExt,
@@ -61,68 +64,47 @@ fn get_chapter_url(chapter_info: &ChapterInfo, comic_info: &ComicInfo) -> String
     )
 }
 
-async fn get_comics() -> Vec<ComicInfo> {
+#[tracing::instrument]
+async fn get_comics() -> Result<Vec<ComicInfo>> {
     let raw_data = reqwest::get(format!(
         "{}/api/home_album_list?file=image&limit=10000&team=5&page=1",
         BASE_URL.as_str()
     ))
-    .await
-    .unwrap()
+    .await?
     .text()
-    .await
-    .unwrap();
-    let raw_data: ComicRawList = serde_json::from_str(&raw_data).unwrap();
+    .await?;
+    let raw_data: ComicRawList = serde_json::from_str(&raw_data).context("Empty comic list")?;
 
     raw_data
         .data
         .into_iter()
         .map(|comic_raw| comic_raw.info)
-        .map(|info_raw| serde_json::from_str::<ComicInfo>(&info_raw).unwrap())
-        .collect()
+        .map(|info_raw| serde_json::from_str::<ComicInfo>(&info_raw))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Error::from)
 }
 
-async fn get_chapters(comic_info: &ComicInfo) -> Vec<String> {
-    let get_chapter = || async move {
-        let raw_data = reqwest::get(format!(
-            "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
-            BASE_URL.as_str(),
-            comic_info.id
-        ))
-        .await
-        .map_err(Error::from)?
-        .text()
-        .await
-        .map_err(Error::from)?;
+#[tracing::instrument]
+async fn get_chapters(comic_info: &ComicInfo) -> Result<Vec<String>> {
+    let raw_data = reqwest::get(format!(
+        "{}/api/chapter_list?album={}&page=1&limit=10000&v=1v0",
+        BASE_URL.as_str(),
+        comic_info.id
+    ))
+    .await?
+    .text()
+    .await?;
 
-        if raw_data.is_empty() {
-            Err(color_eyre::eyre::anyhow!("Empty chapter"))
-        } else {
-            Ok(raw_data)
-        }
-    };
+    let raw_data: Vec<ChapterRaw> =
+        serde_json::from_str(&raw_data).context("Empty chapter list")?;
 
-    let raw_data = get_chapter
-        .retry(ExponentialBuilder::default())
-        .sleep(sleep)
-        .await
-        .unwrap_or_default();
-
-    let raw_data: Vec<ChapterRaw> = match serde_json::from_str(&raw_data) {
-        Ok(v) => v,
-        Err(error) => {
-            tracing::error!("{:?}", comic_info);
-            tracing::error!("{}", error);
-            vec![]
-        }
-    };
-
-    raw_data
+    Ok(raw_data
         .into_iter()
         .map(|chapter_raw| chapter_raw.info)
-        .map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw).unwrap())
+        .flat_map(|info_raw| serde_json::from_str::<ChapterInfo>(&info_raw))
         .filter(|info| info.lock.is_none())
         .map(|chapter_info| get_chapter_url(&chapter_info, comic_info))
-        .collect()
+        .collect())
 }
 
 #[tokio::main]
@@ -141,9 +123,23 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    let comics = get_comics().await;
+    let wrapper = async || get_comics().await;
+    let comics = wrapper
+        .retry(ExponentialBuilder::default())
+        .sleep(sleep)
+        .await?;
+
     let chapters: Vec<_> = stream::iter(comics)
-        .then(|comic_info| async move { stream::iter(get_chapters(&comic_info).await) })
+        .then(|comic_info| async move {
+            let wrapper = async || get_chapters(&comic_info).await;
+            let chapters = wrapper
+                .retry(ExponentialBuilder::default())
+                .sleep(sleep)
+                .await
+                .unwrap_or_default();
+
+            stream::iter(chapters)
+        })
         .flatten()
         .collect()
         .await;
