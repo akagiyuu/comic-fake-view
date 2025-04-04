@@ -123,7 +123,12 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    let comics = get_comics().await?;
+    let wrapper = async || get_comics().await;
+    let comics = wrapper
+        .retry(ExponentialBuilder::default())
+        .sleep(sleep)
+        .await?;
+
     let chapters: Vec<_> = stream::iter(comics)
         .then(|comic_info| async move {
             let wrapper = async || get_chapters(&comic_info).await;
