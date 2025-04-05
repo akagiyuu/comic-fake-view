@@ -1,0 +1,52 @@
+name: automation
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-chapter:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      version: ${{ env.VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache Chromium
+        uses: actions/cache@v3
+        id: chromium-cache
+        with:
+          path: ~/.chromium
+          key: ${{ runner.os }}-chromium-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-chromium-
+
+      - name: Setup Chromium
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        uses: browser-actions/setup-chrome@v1
+        with:
+          install-dependencies: true
+          chrome-version: stable
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          targets: x86_64-unknown-linux-gnu
+          toolchain: nightly
+
+      - name: Fetch
+        shell: bash
+        run: |
+          cargo run --bin cli
+        env:
+          user_data_dir: "~/.chromium"
+          headless: true
+          wait_for_navigation: 1
+          max_retries: 1
+          tab_count: 20
+
+      - name: Commit
+        uses: EndBug/add-and-commit@v9
