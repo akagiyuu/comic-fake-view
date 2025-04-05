@@ -657,6 +657,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "comic-fake-view-core",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "color-eyre"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
