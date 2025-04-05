@@ -57,21 +57,22 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
         .await
         .send_replace(false);
 
-    loop {
-        tokio::select! {
-            Some(res) = join_set.join_next() => {
-                if let Err(error) = res {
-                    tracing::error!("{:?}", error);
+    tokio::select! {
+        _ = async {
+            while let Some(res) = join_set.join_next().await {
+                if let Err(e) = res {
+                    tracing::error!("task failed: {:?}", e);
                 }
             }
-            _ = is_stopped.changed() => {
+        } => tracing::info!("All tasks completed."),
+        _ = async {
+            while is_stopped.changed().await.is_ok() {
                 if *is_stopped.borrow() {
-                    tracing::info!("Received stop signal, aborting join_set.");
-                    join_set.abort_all();
+                    tracing::info!("Received stop signal, aborting all tasks.");
                     break;
                 }
             }
-        }
+        } => tracing::info!("cancellation requested, dropping join_set"),
     }
 
     database::clean(&pool).await?;
