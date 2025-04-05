@@ -22,11 +22,6 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
     app_handle.emit("total_jobs", job_receiver.len())?;
 
     let mut browser = browser::init(&config).await?;
-    app_handle
-        .state::<Mutex<watch::Sender<bool>>>()
-        .lock()
-        .await
-        .send_replace(false);
 
     let mut join_set = JoinSet::<Result<()>>::new();
     for _ in 0..config.tab_count {
@@ -56,24 +51,28 @@ async fn _run(app_handle: AppHandle) -> Result<()> {
     }
     let mut is_stopped = app_handle.state::<watch::Receiver<bool>>().inner().clone();
 
-    loop {
-        tokio::select! {
-            // Process completed tasks from the join_set.
-            Some(res) = join_set.join_next() => {
-                if let Err(error) = res {
-                    tracing::error!("{:?}", error);
+    app_handle
+        .state::<Mutex<watch::Sender<bool>>>()
+        .lock()
+        .await
+        .send_replace(false);
+
+    tokio::select! {
+        _ = async {
+            while let Some(res) = join_set.join_next().await {
+                if let Err(e) = res {
+                    tracing::error!("task failed: {:?}", e);
                 }
             }
-            // Monitor changes in the is_stopped channel.
-            _ = is_stopped.changed() => {
-                // Check the current value; if it is false, abort all tasks.
+        } => tracing::info!("All tasks completed."),
+        _ = async {
+            while is_stopped.changed().await.is_ok() {
                 if *is_stopped.borrow() {
-                    tracing::info!("Received stop signal, aborting join_set.");
-                    join_set.abort_all();
-                    break; // Exit the loop after aborting.
+                    tracing::info!("Received stop signal, aborting all tasks.");
+                    break;
                 }
             }
-        }
+        } => tracing::info!("cancellation requested, dropping join_set"),
     }
 
     database::clean(&pool).await?;
