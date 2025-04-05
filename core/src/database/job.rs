@@ -8,12 +8,8 @@ pub async fn count(pool: &SqlitePool) -> Result<u64> {
     Ok(count)
 }
 
-pub async fn is_empty(pool: &SqlitePool) -> Result<bool> {
-    count(pool).await.map(|count| count == 0)
-}
-
 pub async fn all(pool: &SqlitePool) -> Result<flume::Receiver<String>> {
-    let jobs = sqlx::query_scalar("SELECT url FROM jobs WHERE is_read = false")
+    let jobs = sqlx::query_scalar("SELECT url FROM jobs WHERE is_read = false LIMIT 10")
         .fetch_all(pool)
         .await?;
 

@@ -701,6 +701,7 @@ dependencies = [
  "backon",
  "chromiumoxide",
  "color-eyre",
+ "comic-fake-view-core",
  "config",
  "const_format",
  "flume",
@@ -714,6 +715,26 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "comic-fake-view-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "backon",
+ "chromiumoxide",
+ "config",
+ "const_format",
+ "flume",
+ "futures",
+ "reqwest",
+ "serde",
+ "sqlx",
  "tokio",
  "toml",
  "tracing",

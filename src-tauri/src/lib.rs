@@ -7,10 +7,7 @@ use tracing_subscriber::{
     filter, fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
 };
 
-pub mod browser;
 pub mod command;
-pub mod config;
-pub mod database;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
