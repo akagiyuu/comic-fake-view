@@ -57,6 +57,12 @@ impl Config {
     pub fn load() -> Self {
         ::config::Config::builder()
             .add_source(config::File::with_name(CONFIG_FILE_NAME))
+            .add_source(
+                config::Environment::with_prefix("APP")
+                    .try_parsing(true)
+                    .separator("_")
+                    .list_separator(" "),
+            )
             .build()
             .and_then(|raw| raw.try_deserialize::<Self>())
             .unwrap_or_default()
