@@ -38,4 +38,5 @@ serde_with = { workspace = true, features = ["json"] }
 tracing-subscriber = { workspace = true, features = ["fmt", "chrono", "env-filter", "json"] }
 tracing = { workspace = true }
 const_format = { workspace = true }
+comic-fake-view-core = { version = "0.1.0", path = "../core" }
 

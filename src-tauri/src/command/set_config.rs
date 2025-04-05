@@ -1,4 +1,4 @@
-use crate::config::Config;
+use comic_fake_view_core::config::Config;
 
 #[tauri::command]
 pub async fn set_config(_: tauri::AppHandle, config: Config) {
