@@ -4,11 +4,17 @@ use tokio::fs;
 
 const CONFIG_FILE_NAME: &str = "config";
 
+#[cfg(target_os = "windows")]
 fn default_user_data_dir() -> String {
     format!(
         r#"{}\AppData\Local\Google\Chrome\User Data"#,
         std::env::var("USERPROFILE").unwrap_or_default()
     )
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_user_data_dir() -> String {
+    "~/.chromium".to_string()
 }
 
 const fn default_wait_for_navigation() -> u64 {
