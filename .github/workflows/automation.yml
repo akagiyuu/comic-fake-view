@@ -42,11 +42,11 @@ jobs:
         run: |
           cargo run --bin cli
         env:
-          user_data_dir: "~/.chromium"
-          headless: true
-          wait_for_navigation: 1
-          max_retries: 1
-          tab_count: 20
+          app_user_data_dir: "~/.chromium"
+          app_headless: true
+          app_wait_for_navigation: 1
+          app_max_retries: 1
+          app_tab_count: 20
 
       - name: Commit
         uses: EndBug/add-and-commit@v9
