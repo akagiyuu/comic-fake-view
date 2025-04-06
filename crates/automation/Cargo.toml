@@ -1,0 +1,13 @@
+[package]
+name = "automation"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+browser = { version = "0.1.0", path = "../browser" }
+color-eyre.workspace = true
+database = { version = "0.1.0", path = "../database" }
+futures.workspace = true
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true

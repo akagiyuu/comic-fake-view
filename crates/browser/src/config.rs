@@ -1,8 +1,6 @@
 use chromiumoxide::{BrowserConfig, browser::HeadlessMode};
 use serde::{Deserialize, Serialize};
 
-const CONFIG_FILE_NAME: &str = "config";
-
 fn default_user_data_dir() -> String {
     format!(
         r#"{}\AppData\Local\Google\Chrome\User Data"#,
