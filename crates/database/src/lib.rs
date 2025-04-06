@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use color_eyre::Result;
 use const_format::formatcp;
 use sqlx::SqlitePool;
 use tokio::{fs, io::AsyncWriteExt};

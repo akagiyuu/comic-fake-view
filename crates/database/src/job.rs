@@ -1,4 +1,4 @@
-use anyhow::Result;
+use color_eyre::Result;
 use sqlx::SqlitePool;
 
 pub async fn count(pool: &SqlitePool) -> Result<u64> {

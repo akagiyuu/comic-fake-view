@@ -1,14 +1,13 @@
 [package]
-name = "cli"
+name = "automation"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-automation = { workspace = true }
-browser.workspace = true
+browser = { workspace = true }
 color-eyre.workspace = true
-config.workspace = true
+database = { workspace = true }
+futures.workspace = true
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
-tracing-subscriber = { workspace = true, features = ["fmt", "chrono", "env-filter", "json"] }

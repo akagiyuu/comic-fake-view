@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["desktop-app/src-tauri", "chapter-fetcher", "core", "cli"]
+members = ["desktop-app/src-tauri", "chapter-fetcher", "cli", "crates/database", "crates/browser", "crates/automation"]
 
 [workspace.dependencies]
 anyhow = "1.0.97"
@@ -24,4 +24,6 @@ tokio = "1.43.0"
 toml = "0.8.20"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
-comic-fake-view-core = { version = "0.1.0", path = "core" }
+automation = { version = "0.1.0", path = "crates/automation" }
+browser = { version = "0.1.0", path = "crates/browser" }
+database = { version = "0.1.0", path = "crates/database" }

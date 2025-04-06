@@ -1,19 +1,13 @@
 [package]
-name = "comic-fake-view-core"
+name = "browser"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow.workspace = true
 backon.workspace = true
 chromiumoxide = { workspace = true, features = ["tokio-runtime"] }
-config.workspace = true
-const_format.workspace = true
-flume.workspace = true
+color-eyre.workspace = true
 futures.workspace = true
-reqwest.workspace = true
 serde = { workspace = true, features = ["derive"] }
-sqlx = { workspace = true, features = ["runtime-tokio", "sqlite"] }
 tokio = { workspace = true, features = ["full"] }
-toml.workspace = true
 tracing.workspace = true
