@@ -9,7 +9,7 @@ pub async fn count(pool: &SqlitePool) -> Result<u64> {
 }
 
 pub async fn all(pool: &SqlitePool) -> Result<flume::Receiver<String>> {
-    let jobs = sqlx::query_scalar("SELECT url FROM jobs WHERE is_read = false LIMIT 10")
+    let jobs = sqlx::query_scalar("SELECT url FROM jobs WHERE is_read = false")
         .fetch_all(pool)
         .await?;
 

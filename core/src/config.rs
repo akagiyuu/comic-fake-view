@@ -1,20 +1,16 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
 const CONFIG_FILE_NAME: &str = "config";
 
-#[cfg(target_os = "windows")]
 fn default_user_data_dir() -> String {
     format!(
         r#"{}\AppData\Local\Google\Chrome\User Data"#,
         std::env::var("USERPROFILE").unwrap_or_default()
     )
-}
-
-#[cfg(not(target_os = "windows"))]
-fn default_user_data_dir() -> String {
-    "~/.chromium".to_string()
 }
 
 const fn default_wait_for_navigation() -> u64 {
@@ -30,7 +26,6 @@ const fn default_tab_count() -> usize {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub chrome_path: Option<String>,
 
@@ -61,17 +56,15 @@ impl Default for Config {
 
 impl Config {
     pub fn load() -> Self {
-        ::config::Config::builder()
-            .add_source(config::File::with_name(CONFIG_FILE_NAME))
-            .add_source(
-                config::Environment::with_prefix("APP")
-                    .try_parsing(true)
-                    .separator("_")
-                    .list_separator(" "),
-            )
+        let config = ::config::Config::builder()
+            .add_source(config::File::with_name(CONFIG_FILE_NAME).required(false))
+            .add_source(config::Environment::with_prefix("app"))
             .build()
             .and_then(|raw| raw.try_deserialize::<Self>())
-            .unwrap_or_default()
+            .unwrap_or_default();
+        tracing::info!("Config loaded: {:?}", config);
+
+        config
     }
 
     pub async fn save(&self) -> Result<()> {

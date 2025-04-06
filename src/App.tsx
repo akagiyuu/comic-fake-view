@@ -41,11 +41,11 @@ import { useTheme } from '@/components/theme-provider';
 import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
-    chromePath: z.string().optional(),
-    userDataDir: z.string().optional(),
-    waitForNavigation: z.number(),
-    maxRetries: z.number().min(0).max(10),
-    tabCount: z.number().min(1),
+    chrome_path: z.string().optional(),
+    user_data_dir: z.string().optional(),
+    wait_for_navigation: z.number(),
+    max_retries: z.number().min(0).max(10),
+    tab_count: z.number().min(1),
     headless: z.boolean(),
 });
 
@@ -184,7 +184,7 @@ function App() {
                                     <div className="space-y-4">
                                         <FormField
                                             control={form.control}
-                                            name="chromePath"
+                                            name="chrome_path"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
@@ -222,7 +222,7 @@ function App() {
 
                                         <FormField
                                             control={form.control}
-                                            name="userDataDir"
+                                            name="user_data_dir"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
@@ -302,7 +302,7 @@ function App() {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <FormField
                                                 control={form.control}
-                                                name="waitForNavigation"
+                                                name="wait_for_navigation"
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>
@@ -336,7 +336,7 @@ function App() {
 
                                             <FormField
                                                 control={form.control}
-                                                name="maxRetries"
+                                                name="max_retries"
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>
@@ -370,7 +370,7 @@ function App() {
 
                                             <FormField
                                                 control={form.control}
-                                                name="tabCount"
+                                                name="tab_count"
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>
