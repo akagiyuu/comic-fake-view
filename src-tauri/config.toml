@@ -1,5 +1,0 @@
-userDataDir = "/home/yuu/.config/chromium"
-headless = false
-waitForNavigation = 1
-maxRetries = 1
-tabCount = 20
