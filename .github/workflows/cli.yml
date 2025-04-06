@@ -8,7 +8,7 @@ permissions:
 jobs:
   fetch-chapter:
     runs-on: ubuntu-latest
-    environment: production
+    environment: cli
     outputs:
       version: ${{ env.VERSION }}
     steps:
@@ -41,8 +41,8 @@ jobs:
         run: |
           cargo run --bin cli
         env:
-          app_user_data_dir: ~/.chromium
+          app_user_data_dir: ${{ vars.USER_DATA_DIR }}
           app_headless: true
-          app_wait_for_navigation: 1
-          app_max_retries: 3
-          app_tab_count: 10
+          app_wait_for_navigation: ${{ vars.WAIT_FOR_NAVIGATION }}
+          app_max_retries: ${{ vars.MAX_RETRIES }}
+          app_tab_count: ${{ vars.TAB_COUNT }}
