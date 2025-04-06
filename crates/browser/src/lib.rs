@@ -1,13 +1,14 @@
-pub mod config;
+mod config;
 
 use std::time::Duration;
 
 use backon::{ExponentialBuilder, Retryable};
 use chromiumoxide::{Browser, Page, error::CdpError};
 use color_eyre::eyre::{Context, Result};
-use config::Config;
 use futures::StreamExt;
 use tokio::time::sleep;
+
+pub use config::Config;
 
 pub async fn init(config: &Config) -> Result<Browser> {
     let (browser, mut handler) = Browser::launch(config.try_into()?).await.unwrap();

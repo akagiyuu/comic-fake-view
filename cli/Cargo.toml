@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow.workspace = true
-comic-fake-view-core = { workspace = true }
+automation = { workspace = true }
+browser.workspace = true
+color-eyre.workspace = true
+config.workspace = true
+serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["fmt", "chrono", "env-filter", "json"] }

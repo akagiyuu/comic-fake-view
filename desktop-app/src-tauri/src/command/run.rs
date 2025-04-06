@@ -1,10 +1,13 @@
-use comic_fake_view_core::config::Config;
+use std::sync::Arc;
+
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::{mpsc, watch, Mutex};
 
+use crate::config::Config;
+
 #[tauri::command]
 pub async fn run(app_handle: AppHandle) {
-    let config = Config::load();
+    let config = Config::load().unwrap();
     let cancellation = app_handle.state::<watch::Receiver<bool>>().inner().clone();
     app_handle
         .state::<Mutex<watch::Sender<bool>>>()
@@ -21,7 +24,14 @@ pub async fn run(app_handle: AppHandle) {
         }
     });
 
-    if let Err(error) = comic_fake_view_core::run(progress_notifier, cancellation, &config).await {
+    if let Err(error) = automation::run(
+        progress_notifier,
+        cancellation,
+        Arc::new(config.automation_config),
+        &config.browser_config,
+    )
+    .await
+    {
         tracing::error!("{:?}", error)
     }
 

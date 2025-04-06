@@ -1,7 +1,9 @@
+pub mod config;
+
 use std::sync::Arc;
 
-use anyhow::Result;
-use comic_fake_view_core::config::Config;
+use color_eyre::Result;
+use config::Config;
 use tokio::sync::{mpsc, watch};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
@@ -26,13 +28,19 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    let config = Arc::new(Config::load());
+    let config = Config::load()?;
     let (_cancellation_sender, cancellation) = watch::channel(false);
 
     let (progress_notifier, mut progress_receiver) =
         mpsc::unbounded_channel::<(&'static str, String)>();
     let automation_handler = tokio::spawn(async move {
-        comic_fake_view_core::run(progress_notifier, cancellation, config.as_ref()).await
+        automation::run(
+            progress_notifier,
+            cancellation,
+            Arc::new(config.automation_config),
+            &config.browser_config,
+        )
+        .await
     });
 
     let (_, job_count) = progress_receiver.recv().await.unwrap();

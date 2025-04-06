@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-browser = { version = "0.1.0", path = "../browser" }
+browser = { workspace = true }
 color-eyre.workspace = true
-database = { version = "0.1.0", path = "../database" }
+database = { workspace = true }
 futures.workspace = true
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }

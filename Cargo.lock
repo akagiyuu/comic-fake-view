@@ -686,8 +686,11 @@ dependencies = [
 name = "cli"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "comic-fake-view-core",
+ "automation",
+ "browser",
+ "color-eyre",
+ "config",
+ "serde",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -734,34 +737,19 @@ dependencies = [
 name = "comic-fake-view"
 version = "1.0.0"
 dependencies = [
- "comic-fake-view-core",
+ "automation",
+ "browser",
+ "color-eyre",
  "config",
+ "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "comic-fake-view-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "backon",
- "chromiumoxide",
- "config",
- "const_format",
- "flume",
- "futures",
- "reqwest",
- "serde",
- "sqlx",
- "tokio",
  "toml",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
