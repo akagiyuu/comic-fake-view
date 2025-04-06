@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["desktop-app/src-tauri", "chapter-fetcher", "core", "cli"]
+members = ["desktop-app/src-tauri", "chapter-fetcher", "core", "cli", "crates/database"]
 
 [workspace.dependencies]
 anyhow = "1.0.97"
