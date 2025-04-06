@@ -20,23 +20,10 @@ tauri-build = { workspace = true, features = [] }
 [dependencies]
 tauri = { workspace = true, features = ["devtools"] }
 tauri-plugin-opener = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 tauri-plugin-dialog = { workspace = true }
 config = { workspace = true }
-chromiumoxide = { workspace = true, features = ["tokio-runtime"] }
-color-eyre = { workspace = true }
-futures = { workspace = true }
-reqwest = { workspace = true }
-anyhow = { workspace = true }
-backon = { workspace = true }
 tokio = { workspace = true }
-flume = { workspace = true }
-sqlx = { workspace = true, features = ["runtime-tokio", "sqlite"] }
-toml = { workspace = true }
-serde_with = { workspace = true, features = ["json"] }
 tracing-subscriber = { workspace = true, features = ["fmt", "chrono", "env-filter", "json"] }
 tracing = { workspace = true }
-const_format = { workspace = true }
-comic-fake-view-core = { version = "0.1.0", path = "../core" }
+comic-fake-view-core = { workspace = true }
 

@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-comic-fake-view-core = { version = "0.1.0", path = "../core" }
+comic-fake-view-core = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["fmt", "chrono", "env-filter", "json"] }
