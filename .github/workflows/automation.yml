@@ -45,8 +45,5 @@ jobs:
           app_user_data_dir: ~/.chromium
           app_headless: true
           app_wait_for_navigation: 1
-          app_max_retries: 1
-          app_tab_count: 20
-
-      - name: Commit
-        uses: EndBug/add-and-commit@v9
+          app_max_retries: 3
+          app_tab_count: 10
