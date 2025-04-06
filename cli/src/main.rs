@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use comic_fake_view_core::config::Config;
-use indicatif::ProgressBar;
 use tokio::sync::{mpsc, watch};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
@@ -37,16 +36,15 @@ async fn main() -> Result<()> {
     });
 
     let (_, job_count) = progress_receiver.recv().await.unwrap();
-    let bar = ProgressBar::new(job_count.parse().unwrap());
 
     let progress_handler = tokio::spawn(async move {
+        let mut count = 0;
         while let Some((event, _)) = progress_receiver.recv().await {
             if let "complete" = event {
-                bar.inc(1);
+                count += 1;
+                tracing::info!("Progress: {}/{}", count, job_count);
             }
         }
-
-        Ok::<(), anyhow::Error>(())
     });
 
     let _ = tokio::join!(automation_handler, progress_handler);
