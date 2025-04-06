@@ -1,5 +1,7 @@
 name: cli
 on:
+  schedule:
+    - cron: '30 * * * *' 
   workflow_dispatch:
 
 permissions:
