@@ -13,7 +13,7 @@ pub struct Config {
 impl Config {
     pub fn load() -> Result<Self> {
         ::config::Config::builder()
-            .add_source(config::Environment::with_prefix("app"))
+            .add_source(config::Environment::with_prefix("app").try_parsing(true))
             .build()
             .and_then(|raw| raw.try_deserialize::<Self>())
             .map_err(color_eyre::eyre::Error::from)
