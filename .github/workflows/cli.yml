@@ -1,5 +1,8 @@
 name: cli
 on:
+  schedule:
+    - cron: '0,30 17-23 * * *'
+    - cron: '0,30 0-8 * * *'
   workflow_dispatch:
 
 permissions:
