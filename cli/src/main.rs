@@ -6,7 +6,6 @@ use automation::Message;
 use color_eyre::Result;
 use config::Config;
 use futures::StreamExt;
-use tokio::sync::{mpsc, watch};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
     EnvFilter, Layer, filter, fmt, layer::SubscriberExt, util::SubscriberInitExt,
@@ -42,13 +41,14 @@ async fn main() -> Result<()> {
     tokio::pin!(task);
 
     let mut count = 0;
+    let mut total_count = 0;
     while let Some(progress) = task.next().await {
         match progress? {
             Message::CompleteJob => {
                 count += 1;
-                tracing::info!("Progress: {}/{}", count, count);
+                tracing::info!("Progress: {}/{}", count, total_count);
             }
-            Message::JobCount(c) => count = c,
+            Message::JobCount(c) => total_count = c,
         }
     }
 
