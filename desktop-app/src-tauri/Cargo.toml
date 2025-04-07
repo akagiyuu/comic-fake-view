@@ -30,4 +30,5 @@ color-eyre.workspace = true
 serde = { workspace = true, features = ["derive"] }
 browser.workspace = true
 toml.workspace = true
+futures.workspace = true
 

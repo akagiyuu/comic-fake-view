@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use automation::Message;
+use futures::StreamExt;
 use tauri::{AppHandle, Emitter, Manager};
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{watch, Mutex};
 
 use crate::config::Config;
 
@@ -15,24 +17,20 @@ pub async fn run(app_handle: AppHandle) {
         .await
         .send_replace(false);
 
-    let (progress_notifier, mut progress_receiver) = mpsc::unbounded_channel();
-
-    let app_handle_clone = app_handle.clone();
-    tokio::spawn(async move {
-        while let Some((event, data)) = progress_receiver.recv().await {
-            app_handle_clone.emit(event, data).unwrap();
-        }
-    });
-
-    if let Err(error) = automation::run(
-        progress_notifier,
-        cancellation,
+    let task = automation::run(
+        Some(cancellation),
         Arc::new(config.automation_config),
         &config.browser_config,
     )
-    .await
-    {
-        tracing::error!("{:?}", error)
+    .await;
+    tokio::pin!(task);
+
+    while let Some(message) = task.next().await {
+        match message {
+            Ok(Message::JobCount(count)) => app_handle.emit("total_jobs", count).unwrap(),
+            Ok(Message::CompleteJob) => app_handle.emit("complete", ()).unwrap(),
+            Err(error) => app_handle.emit("error", error.to_string()).unwrap(),
+        }
     }
 
     app_handle.emit("completed", ()).unwrap();

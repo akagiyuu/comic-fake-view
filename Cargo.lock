@@ -768,6 +768,7 @@ dependencies = [
  "browser",
  "color-eyre",
  "config",
+ "futures",
  "serde",
  "tauri",
  "tauri-build",
