@@ -8,6 +8,7 @@ automation = { workspace = true }
 browser.workspace = true
 color-eyre.workspace = true
 config.workspace = true
+futures.workspace = true
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true

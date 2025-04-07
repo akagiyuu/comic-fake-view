@@ -4,10 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+async-stream = "0.3.6"
 browser = { workspace = true }
+chromiumoxide = { workspace = true, features = ["tokio-runtime"] }
 color-eyre.workspace = true
 database = { workspace = true }
+flume.workspace = true
 futures.workspace = true
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
+tokio-stream = "0.1.17"
 tracing.workspace = true
