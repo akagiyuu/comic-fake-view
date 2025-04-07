@@ -2,8 +2,10 @@ pub mod config;
 
 use std::sync::Arc;
 
+use automation::Message;
 use color_eyre::Result;
 use config::Config;
+use futures::StreamExt;
 use tokio::sync::{mpsc, watch};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
@@ -29,33 +31,26 @@ async fn main() -> Result<()> {
         .init();
 
     let config = Config::load()?;
-    let (_cancellation_sender, cancellation) = watch::channel(false);
 
-    let (progress_notifier, mut progress_receiver) =
-        mpsc::unbounded_channel::<(&'static str, String)>();
-    let automation_handler = tokio::spawn(async move {
-        automation::run(
-            progress_notifier,
-            cancellation,
-            Arc::new(config.automation_config),
-            &config.browser_config,
-        )
-        .await
-    });
+    let task = automation::run(
+        None,
+        Arc::new(config.automation_config),
+        &config.browser_config,
+    )
+    .await;
 
-    let (_, job_count) = progress_receiver.recv().await.unwrap();
+    tokio::pin!(task);
 
-    let progress_handler = tokio::spawn(async move {
-        let mut count = 0;
-        while let Some((event, _)) = progress_receiver.recv().await {
-            if let "complete" = event {
+    let mut count = 0;
+    while let Some(progress) = task.next().await {
+        match progress? {
+            Message::CompleteJob => {
                 count += 1;
-                tracing::info!("Progress: {}/{}", count, job_count);
+                tracing::info!("Progress: {}/{}", count, count);
             }
+            Message::JobCount(c) => count = c,
         }
-    });
-
-    let _ = tokio::join!(automation_handler, progress_handler);
+    }
 
     Ok(())
 }

@@ -716,6 +716,7 @@ dependencies = [
  "browser",
  "color-eyre",
  "config",
+ "futures",
  "serde",
  "tokio",
  "tracing",
