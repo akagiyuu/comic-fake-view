@@ -8,18 +8,12 @@ pub async fn count(pool: &SqlitePool) -> Result<u64> {
     Ok(count)
 }
 
-pub async fn all(pool: &SqlitePool) -> Result<flume::Receiver<String>> {
+pub async fn all(pool: &SqlitePool) -> Result<Vec<String>> {
     let jobs = sqlx::query_scalar("SELECT url FROM jobs WHERE is_read = false")
         .fetch_all(pool)
         .await?;
 
-    let (sender, receiver) = flume::unbounded::<String>();
-
-    for job in jobs {
-        sender.send_async(job).await?;
-    }
-
-    Ok(receiver)
+    Ok(jobs)
 }
 
 pub async fn done(url: &str, pool: &SqlitePool) -> Result<()> {
