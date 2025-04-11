@@ -1,46 +1,46 @@
 name: cli
 on:
   schedule:
-    - cron: '0 17 * * *'    # local 00:00 (UTC+7) → 17:00 UTC (previous day)
-    - cron: '23 17 * * *'   # local 00:23 → 17:23 UTC (previous day)
-    - cron: '46 17 * * *'   # local 00:46 → 17:46 UTC (previous day)
-    - cron: '9 18 * * *'    # local 01:09 → 18:09 UTC
-    - cron: '32 18 * * *'   # local 01:32 → 18:32 UTC
-    - cron: '55 18 * * *'   # local 01:55 → 18:55 UTC
-    - cron: '18 19 * * *'   # local 02:18 → 19:18 UTC
-    - cron: '41 19 * * *'   # local 02:41 → 19:41 UTC
-    - cron: '4 20 * * *'    # local 03:04 → 20:04 UTC
-    - cron: '27 20 * * *'   # local 03:27 → 20:27 UTC
-    - cron: '50 20 * * *'   # local 03:50 → 20:50 UTC
-    - cron: '13 21 * * *'   # local 04:13 → 21:13 UTC
-    - cron: '36 21 * * *'   # local 04:36 → 21:36 UTC
-    - cron: '59 21 * * *'   # local 04:59 → 21:59 UTC
-    - cron: '22 22 * * *'   # local 05:22 → 22:22 UTC
-    - cron: '45 22 * * *'   # local 05:45 → 22:45 UTC
-    - cron: '8 23 * * *'    # local 06:08 → 23:08 UTC
-    - cron: '31 23 * * *'   # local 06:31 → 23:31 UTC
-    - cron: '54 23 * * *'   # local 06:54 → 23:54 UTC
-    - cron: '17 0 * * *'    # local 07:17 → 00:17 UTC (next day)
-    - cron: '40 0 * * *'    # local 07:40 → 00:40 UTC (next day)
-    - cron: '3 1 * * *'     # local 08:03 → 01:03 UTC (next day)
-    - cron: '26 1 * * *'    # local 08:26 → 01:26 UTC (next day)
-    - cron: '49 1 * * *'    # local 08:49 → 01:49 UTC (next day)
-    - cron: '12 2 * * *'    # local 09:12 → 02:12 UTC (next day)
-    - cron: '35 2 * * *'    # local 09:35 → 02:35 UTC (next day)
-    - cron: '58 2 * * *'    # local 09:58 → 02:58 UTC (next day)
-    - cron: '21 3 * * *'    # local 10:21 → 03:21 UTC (next day)
-    - cron: '44 3 * * *'    # local 10:44 → 03:44 UTC (next day)
-    - cron: '7 4 * * *'     # local 11:07 → 04:07 UTC (next day)
-    - cron: '30 4 * * *'    # local 11:30 → 04:30 UTC (next day)
-    - cron: '53 4 * * *'    # local 11:53 → 04:53 UTC (next day)
-    - cron: '16 5 * * *'    # local 12:16 → 05:16 UTC (next day)
-    - cron: '39 5 * * *'    # local 12:39 → 05:39 UTC (next day)
-    - cron: '2 6 * * *'     # local 13:02 → 06:02 UTC (next day)
-    - cron: '25 6 * * *'    # local 13:25 → 06:25 UTC (next day)
-    - cron: '48 6 * * *'    # local 13:48 → 06:48 UTC (next day)
-    - cron: '11 7 * * *'    # local 14:11 → 07:11 UTC (next day)
-    - cron: '34 7 * * *'    # local 14:34 → 07:34 UTC (next day)
-    - cron: '57 7 * * *'    # local 14:57 → 07:57 UTC (next day)
+     - cron: '0 17 * * *'    # local 00:00  → UTC 17:00 (previous day)
+    - cron: '25 17 * * *'   # local 00:25  → UTC 17:25 (previous day)
+    - cron: '50 17 * * *'   # local 00:50  → UTC 17:50 (previous day)
+    - cron: '15 18 * * *'   # local 01:15  → UTC 18:15 (previous day)
+    - cron: '40 18 * * *'   # local 01:40  → UTC 18:40 (previous day)
+    - cron: '5 19 * * *'    # local 02:05  → UTC 19:05 (previous day)
+    - cron: '30 19 * * *'   # local 02:30  → UTC 19:30 (previous day)
+    - cron: '55 19 * * *'   # local 02:55  → UTC 19:55 (previous day)
+    - cron: '20 20 * * *'   # local 03:20  → UTC 20:20 (previous day)
+    - cron: '45 20 * * *'   # local 03:45  → UTC 20:45 (previous day)
+    - cron: '10 21 * * *'   # local 04:10  → UTC 21:10 (previous day)
+    - cron: '35 21 * * *'   # local 04:35  → UTC 21:35 (previous day)
+    - cron: '0 22 * * *'    # local 05:00  → UTC 22:00 (previous day)
+    - cron: '25 22 * * *'   # local 05:25  → UTC 22:25 (previous day)
+    - cron: '50 22 * * *'   # local 05:50  → UTC 22:50 (previous day)
+    - cron: '15 23 * * *'   # local 06:15  → UTC 23:15 (previous day)
+    - cron: '40 23 * * *'   # local 06:40  → UTC 23:40 (previous day)
+    - cron: '5 0 * * *'     # local 07:05  → UTC 00:05 (same day)
+    - cron: '30 0 * * *'    # local 07:30  → UTC 00:30 (same day)
+    - cron: '55 0 * * *'    # local 07:55  → UTC 00:55 (same day)
+    - cron: '20 1 * * *'    # local 08:20  → UTC 01:20 (same day)
+    - cron: '45 1 * * *'    # local 08:45  → UTC 01:45 (same day)
+    - cron: '10 2 * * *'    # local 09:10  → UTC 02:10 (same day)
+    - cron: '35 2 * * *'    # local 09:35  → UTC 02:35 (same day)
+    - cron: '0 3 * * *'     # local 10:00  → UTC 03:00 (same day)
+    - cron: '25 3 * * *'    # local 10:25  → UTC 03:25 (same day)
+    - cron: '50 3 * * *'    # local 10:50  → UTC 03:50 (same day)
+    - cron: '15 4 * * *'    # local 11:15  → UTC 04:15 (same day)
+    - cron: '40 4 * * *'    # local 11:40  → UTC 04:40 (same day)
+    - cron: '5 5 * * *'     # local 12:05  → UTC 05:05 (same day)
+    - cron: '30 5 * * *'    # local 12:30  → UTC 05:30 (same day)
+    - cron: '55 5 * * *'    # local 12:55  → UTC 05:55 (same day)
+    - cron: '20 6 * * *'    # local 13:20  → UTC 06:20 (same day)
+    - cron: '45 6 * * *'    # local 13:45  → UTC 06:45 (same day)
+    - cron: '10 7 * * *'    # local 14:10  → UTC 07:10 (same day)
+    - cron: '35 7 * * *'    # local 14:35  → UTC 07:35 (same day)
+    - cron: '0 8 * * *'     # local 15:00  → UTC 08:00 (same day)
+    - cron: '25 8 * * *'    # local 15:25  → UTC 08:25 (same day)
+    - cron: '50 8 * * *'    # local 15:50  → UTC 08:50 (same day)
+    - cron: '15 9 * * *'    # local 16:15  → UTC 09:15 (same day)
   workflow_dispatch:
 
 permissions:
