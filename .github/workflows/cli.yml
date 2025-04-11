@@ -1,7 +1,7 @@
 name: cli
 on:
   schedule:
-     - cron: '0 17 * * *'    # local 00:00  → UTC 17:00 (previous day)
+    - cron: '0 17 * * *'    # local 00:00  → UTC 17:00 (previous day)
     - cron: '25 17 * * *'   # local 00:25  → UTC 17:25 (previous day)
     - cron: '50 17 * * *'   # local 00:50  → UTC 17:50 (previous day)
     - cron: '15 18 * * *'   # local 01:15  → UTC 18:15 (previous day)
